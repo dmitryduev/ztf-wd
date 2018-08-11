@@ -36,5 +36,5 @@ Bulid and launch the main container:
 docker build -t ztf-wd -f Dockerfile .
 docker run --name ztf-wd -d --restart always -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 # test mode:
-docker run --name ztf-wd -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
+docker run -it --rm --name ztf-wd -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 ```

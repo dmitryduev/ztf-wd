@@ -1,4 +1,29 @@
 {
+  "server": {
+    "environment": "test",
+    "host": "0.0.0.0",
+    "port": "8082",
+    "help": {
+      "self": "global server settings",
+      "host": "host ip for test env deployment",
+      "port": "port for test env deployment. in production, this is handled by supervisord/gunicorn",
+      "environment": "'test' or 'production'"
+    }
+  },
+
+  "path": {
+    "path_app": "/app",
+    "path_logs": "/app/logs/",
+    "path_alerts": "/alerts/",
+    "path_tmp": "/app/_tmp/",
+    "help": {
+      "self": "path to all kinds of stuff. these are internal container paths",
+      "path_logs": "path to store logs",
+      "path_alerts": "path to thumbnails etc",
+      "path_tmp": "path to store temporary stuff"
+    }
+  },
+
   "database": {
     "host": "ztf-wd-mongo",
     "port": 27017,
