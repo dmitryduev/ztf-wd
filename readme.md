@@ -5,7 +5,7 @@ _Loyally serving Shri and the community_
 Clone the repo and cd to the directory:
 ```bash
 git clone https://github.com/dmitryduev/ztf-wd.git
-cd archiver-kped
+cd ztf-wd
 ```
 
 Create a persistent Docker volume for MongoDB and to store thumbnails etc.:
@@ -35,4 +35,6 @@ Bulid and launch the main container:
 ```bash
 docker build -t ztf-wd -f Dockerfile .
 docker run --name ztf-wd -d --restart always -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
+# test mode:
+docker run --name ztf-wd -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 ```
