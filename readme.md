@@ -1,6 +1,6 @@
 ### ZTF finds White Dwarfs
 
-_Loyally serving the community and Shri_
+_Loyally serving Shri and the community_
 
 Clone the repo and cd to the directory:
 ```bash
@@ -8,9 +8,10 @@ git clone https://github.com/dmitryduev/ztf-wd.git
 cd archiver-kped
 ```
 
-Create a persistent Docker volume for MongoDB:
+Create a persistent Docker volume for MongoDB and to store thumbnails etc.:
 ```bash
 docker volume create ztf-wd-mongo-volume
+docker volume create ztf-wd-volume
 ```
 
 Launch the MongoDB container. Feel free to change u/p for the admin
@@ -33,5 +34,5 @@ Create file secrets.json with the Kowalski login credentials:
 Bulid and launch the main container:
 ```bash
 docker build -t ztf-wd -f Dockerfile .
-docker run --name ztf-wd -d --link ztf-wd-mongo:mongo --restart always ztf-wd
+docker run --name ztf-wd -d --restart always -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 ```
