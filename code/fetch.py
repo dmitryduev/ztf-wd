@@ -1,4 +1,12 @@
+import argparse
 import datetime
+import inspect
+import logging
+import os
+import sys
+import time
+import traceback
+import pymongo
 from astropy.time import Time
 import json
 from penquins import Kowalski
@@ -7,8 +15,6 @@ import numpy as np
 
 # with open('/app/crontest.txt', 'w') as f:
 #     f.write(str(datetime.datetime.utcnow()))
-
-from penquins import Kowalski
 
 # load secrets:
 # with open('/app/secrets.json') as sjson:
@@ -27,7 +33,7 @@ with open('/Users/dmitryduev/_caltech/python/ztf-wd/secrets.json') as sjson:
 #                 self.assertRaises(TypeError, cross_match, c, msg=f'TypeError not raised on: {c}')
 
 
-def cross_match(_kowalski, _jd, _stars, _fov_size_ref_arcsec=2, retries=3):
+def cross_match(_kowalski, _jd, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
 
     for ir in range(retries):
         try:
@@ -38,28 +44,63 @@ def cross_match(_kowalski, _jd, _stars, _fov_size_ref_arcsec=2, retries=3):
                  "object_coordinates": {"radec": str(_stars),
                                         "cone_search_radius": str(_fov_size_ref_arcsec),
                                         "cone_search_unit": "arcsec"},
-                 "catalogs": {"ZTF_alerts": {"filter": {},
-                                             "projection": {"_id": 0, "objectId": 1,
-                                                            "candid": 1,
-                                                            "candidate.jd": 1,
-                                                            "candidate.programid": 1,
-                                                            "candidate.rb": 1,
-                                                            "candidate.magpsf": 1,
-                                                            "candidate.sigmapsf": 1}}}
+                 "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}},
+                                             "projection": {}}
+                              }
                  }
             # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
+            # {"_id": 1, "objectId": 1,
+            #                                                             "candid": 1,
+            #                                                             "candidate.jd": 1,
+            #                                                             "candidate.programid": 1,
+            #                                                             "candidate.rb": 1,
+            #                                                             "candidate.magpsf": 1,
+            #                                                             "candidate.sigmapsf": 1}
+            # ,
+            #                               "Gaia_DR2_WD": {"filter": {},
+            #                                               "projection": {"_id": 1, "coordinates": 0}}
             # print(q)
-            r = _kowalski.query(query=q, timeout=10)
+            r = _kowalski.query(query=q, timeout=20)
             # print(r)
-            matched_stars = r['result']['ZTF_alerts']
 
-            return matched_stars
+            matches = r['result']['ZTF_alerts']
+
+            # only return non-empty matches:
+            non_empty_matches = {m: v for m, v in matches.items() if v is not None}
+
+            return non_empty_matches
 
         except Exception as _e:
             print(_e)
             continue
 
-    return None
+    return {}
+
+
+def get_doc_by_id(_kowalski, _coll: str, _ids: list, retries=3) -> dict:
+
+    for ir in range(retries):
+        try:
+            print(f'Querying Kowalski, attempt {ir+1}')
+            q = {"query_type": "general_search",
+                 "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
+                 }
+            # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
+            # print(q)
+            r = _kowalski.query(query=q, timeout=10)
+            # print(r)
+            result = r['result']['query_result']
+
+            # convert to dict id -> result
+            matches = {obj['_id']: obj for obj in result}
+
+            return matches
+
+        except Exception as _e:
+            print(_e)
+            continue
+
+    return {}
 
 
 def chunks(l, n):
@@ -68,52 +109,459 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-def main():
-    """
-        Cross-match a night worth of ZTF alerts with a catalog of white dwarfs from Gaia DR2
-    """
+class WhiteDwarf(object):
 
-    # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
-    utc_date = datetime.datetime.utcnow()
-    utc_date = datetime.datetime(utc_date.year, utc_date.month, utc_date.day)
+    def __init__(self, config_file: str):
+        try:
+            ''' load config data '''
+            self.config = self.get_config(_config_file=config_file)
 
-    # convert to jd
-    jd_date = Time(utc_date).jd
-    print(utc_date, jd_date)
+            ''' set up logging at init '''
+            self.logger, self.logger_utc_date = self.set_up_logging(_name='archive', _mode='a')
 
-    # connect to Kowalski
-    # get WD coordinates (extracted from Kowalski)
-    # with open('/app/wds.20180811.json') as wdjson:
-    with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
-        wds = json.load(wdjson)['query_result']
-    # print(wds[:3])
+            # make dirs if necessary:
+            for _pp in ('app', 'alerts', 'tmp', 'logs'):
+                _path = self.config['path']['path_{:s}'.format(_pp)]
+                if not os.path.exists(_path):
+                    os.makedirs(_path)
+                    self.logger.debug('Created {:s}'.format(_path))
 
-    total_detected = 0
+            ''' init connection to Kowalski '''
+            self.kowalski = Kowalski(username=secrets['kowalski']['user'],
+                                     password=secrets['kowalski']['password'])
+            # host='localhost', port=8082, protocol='http'
 
-    with Kowalski(username=secrets['kowalski']['user'],
-                  password=secrets['kowalski']['password']) as kowalski:
-        # host='localhost', port=8082, protocol='http'
+            ''' init db if necessary '''
+            # self.init_db()
+
+            ''' connect to db: '''
+            self.db = None
+            # will exit if this fails
+            # self.connect_to_db()
+
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+            sys.exit()
+
+    @staticmethod
+    def get_config(_config_file):
+        """
+            Load config JSON file
+        """
+        ''' script absolute location '''
+        abs_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
+
+        if _config_file[0] not in ('/', '~'):
+            if os.path.isfile(os.path.join(abs_path, _config_file)):
+                config_path = os.path.join(abs_path, _config_file)
+            else:
+                raise IOError('Failed to find config file')
+        else:
+            if os.path.isfile(_config_file):
+                config_path = _config_file
+            else:
+                raise IOError('Failed to find config file')
+
+        with open(config_path) as cjson:
+            config_data = json.load(cjson)
+            # config must not be empty:
+            if len(config_data) > 0:
+                return config_data
+            else:
+                raise Exception('Failed to load config file')
+
+    def set_up_logging(self, _name='ztf_wd', _mode='w'):
+        """ Set up logging
+
+            :param _name:
+            :param _level: DEBUG, INFO, etc.
+            :param _mode: overwrite log-file or append: w or a
+            :return: logger instance
+            """
+        # 'debug', 'info', 'warning', 'error', or 'critical'
+        if self.config['misc']['logging_level'] == 'debug':
+            _level = logging.DEBUG
+        elif self.config['misc']['logging_level'] == 'info':
+            _level = logging.INFO
+        elif self.config['misc']['logging_level'] == 'warning':
+            _level = logging.WARNING
+        elif self.config['misc']['logging_level'] == 'error':
+            _level = logging.ERROR
+        elif self.config['misc']['logging_level'] == 'critical':
+            _level = logging.CRITICAL
+        else:
+            raise ValueError('Config file error: logging level must be ' +
+                             '\'debug\', \'info\', \'warning\', \'error\', or \'critical\'')
+
+        # get path to logs from config:
+        _path = self.config['path']['path_logs']
+
+        if not os.path.exists(_path):
+            os.makedirs(_path)
+        utc_now = datetime.datetime.utcnow()
+
+        # http://www.blog.pythonlibrary.org/2012/08/02/python-101-an-intro-to-logging/
+        _logger = logging.getLogger(_name)
+
+        _logger.setLevel(_level)
+        # create the logging file handler
+        fh = logging.FileHandler(os.path.join(_path, '{:s}.{:s}.log'.format(_name, utc_now.strftime('%Y%m%d'))),
+                                 mode=_mode)
+        logging.Formatter.converter = time.gmtime
+
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # formatter = logging.Formatter('%(asctime)s %(message)s')
+        fh.setFormatter(formatter)
+
+        # add handler to logger object
+        _logger.addHandler(fh)
+
+        return _logger, utc_now.strftime('%Y%m%d')
+
+    def shut_down_logger(self):
+        """
+            Prevent writing to multiple log-files after 'manual rollover'
+        :return:
+        """
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self.logger.removeHandler(handler)
+
+    def check_logging(self):
+        """
+            Check if a new log file needs to be started and start it if necessary
+        """
+        if datetime.datetime.utcnow().strftime('%Y%m%d') != self.logger_utc_date:
+            # reset
+            self.shut_down_logger()
+            self.logger, self.logger_utc_date = self.set_up_logging(_name='ztf_wd', _mode='a')
+
+    def init_db(self):
+        """
+            Initialize db if new Mongo instance
+        :return:
+        """
+        _client = pymongo.MongoClient(username=self.config['database']['admin'],
+                                      password=self.config['database']['admin_pwd'],
+                                      host=self.config['database']['host'],
+                                      port=self.config['database']['port'])
+        # _id: db_name.user_name
+        user_ids = [_u['_id'] for _u in _client.admin.system.users.find({}, {'_id': 1})]
+
+        db_name = self.config['database']['db']
+        username = self.config['database']['user']
+
+        # print(f'{db_name}.{username}')
+        # print(user_ids)
+
+        if f'{db_name}.{username}' not in user_ids:
+            _client[db_name].command('createUser', self.config['database']['user'],
+                                     pwd=self.config['database']['pwd'], roles=['readWrite'])
+            print('Successfully initialized db')
+
+    def connect_to_db(self):
+        """
+            Connect to MongoDB-powered database
+        :return:
+        """
+        _config = self.config
+        try:
+            if self.logger is not None:
+                self.logger.debug('Connecting to the database at {:s}:{:d}'.
+                                  format(_config['database']['host'], _config['database']['port']))
+            _client = pymongo.MongoClient(host=_config['database']['host'], port=_config['database']['port'])
+            # grab main database:
+            _db = _client[_config['database']['db']]
+
+        except Exception as _e:
+            if self.logger is not None:
+                self.logger.error(_e)
+                self.logger.error('Failed to connect to the database at {:s}:{:d}'.
+                                  format(_config['database']['host'], _config['database']['port']))
+            # raise error
+            raise ConnectionRefusedError
+        try:
+            # authenticate
+            _db.authenticate(_config['database']['user'], _config['database']['pwd'])
+            if self.logger is not None:
+                self.logger.debug('Successfully authenticated with the database at {:s}:{:d}'.
+                                  format(_config['database']['host'], _config['database']['port']))
+        except Exception as _e:
+            if self.logger is not None:
+                self.logger.error(_e)
+                self.logger.error('Authentication failed for the database at {:s}:{:d}'.
+                                  format(_config['database']['host'], _config['database']['port']))
+            raise ConnectionRefusedError
+        try:
+            # get collection with observations
+            _coll_obs = _db[_config['database']['collection_obs']]
+            if self.logger is not None:
+                self.logger.debug('Using collection {:s} with obs data in the database'.
+                                  format(_config['database']['collection_obs']))
+        except Exception as _e:
+            if self.logger is not None:
+                self.logger.error(_e)
+                self.logger.error('Failed to use a collection {:s} with obs data in the database'.
+                                  format(_config['database']['collection_obs']))
+            raise NameError
+
+        if self.logger is not None:
+            self.logger.debug('Successfully connected to database at {:s}:{:d}'.
+                              format(_config['database']['host'], _config['database']['port']))
+
+        # (re)define self.db
+        self.db = dict()
+        self.db['client'] = _client
+        self.db['db'] = _db
+        self.db['coll_obs'] = _coll_obs
+
+    # @timeout(seconds_before_timeout=120)
+    def disconnect_from_db(self):
+        """
+            Disconnect from MongoDB database.
+        :return:
+        """
+        self.logger.debug('Disconnecting from the database.')
+        if self.db is not None:
+            try:
+                self.db['client'].close()
+                self.logger.debug('Successfully disconnected from the database.')
+            except Exception as e:
+                self.logger.error('Failed to disconnect from the database.')
+                self.logger.error(e)
+            finally:
+                # reset
+                self.db = None
+        else:
+            self.logger.debug('No connection found.')
+
+    # @timeout(seconds_before_timeout=120)
+    def check_db_connection(self):
+        """
+            Check if DB connection is alive/established.
+        :return: True if connection is OK
+        """
+        self.logger.debug('Checking database connection.')
+        if self.db is None:
+            try:
+                self.connect_to_db()
+            except Exception as e:
+                print('Lost database connection.')
+                self.logger.error('Lost database connection.')
+                self.logger.error(e)
+                return False
+        else:
+            try:
+                # force connection on a request as the connect=True parameter of MongoClient seems
+                # to be useless here
+                self.db['client'].server_info()
+            except pymongo.errors.ServerSelectionTimeoutError as e:
+                print('Lost database connection.')
+                self.logger.error('Lost database connection.')
+                self.logger.error(e)
+                return False
+
+        return True
+
+    def cross_match(self, _jd, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
+
+        for ir in range(retries):
+            try:
+                print(f'Querying Kowalski, attempt {ir+1}')
+                # query Kowalski for Gaia stars:
+                # if False:
+                q = {"query_type": "cone_search",
+                     "object_coordinates": {"radec": str(_stars),
+                                            "cone_search_radius": str(_fov_size_ref_arcsec),
+                                            "cone_search_unit": "arcsec"},
+                     "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}},
+                                                 "projection": {}}
+                                  }
+                     }
+                # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
+                # {"_id": 1, "objectId": 1,
+                #                                                             "candid": 1,
+                #                                                             "candidate.jd": 1,
+                #                                                             "candidate.programid": 1,
+                #                                                             "candidate.rb": 1,
+                #                                                             "candidate.magpsf": 1,
+                #                                                             "candidate.sigmapsf": 1}
+                # ,
+                #                               "Gaia_DR2_WD": {"filter": {},
+                #                                               "projection": {"_id": 1, "coordinates": 0}}
+                # print(q)
+                r = self.kowalski.query(query=q, timeout=20)
+                # print(r)
+
+                matches = r['result']['ZTF_alerts']
+
+                # only return non-empty matches:
+                non_empty_matches = {m: v for m, v in matches.items() if v is not None}
+
+                return non_empty_matches
+
+            except Exception as _e:
+                print(_e)
+                continue
+
+        return {}
+
+    def get_doc_by_id(self, _coll: str, _ids: list, retries=3) -> dict:
+
+        for ir in range(retries):
+            try:
+                print(f'Querying Kowalski, attempt {ir+1}')
+                q = {"query_type": "general_search",
+                     "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
+                     }
+                # print(q)
+                r = self.kowalski.query(query=q, timeout=10)
+                # print(r)
+                result = r['result']['query_result']
+
+                # convert to dict id -> result
+                matches = {obj['_id']: obj for obj in result}
+
+                return matches
+
+            except Exception as _e:
+                print(_e)
+                continue
+
+        return {}
+
+    def run(self):
+        # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
+        utc_date = datetime.datetime.utcnow()
+        utc_date = datetime.datetime(utc_date.year, utc_date.month, utc_date.day)
+
+        # convert to jd
+        jd_date = Time(utc_date).jd
+        print(utc_date, jd_date)
+
+        # with open('/app/wds.20180811.json') as wdjson:
+        with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
+            wds = json.load(wdjson)['query_result']
+
+        total_detected = 0
 
         # for batch_size run a cross match with ZTF_alerts for current UTC
         for ic, chunk in enumerate(chunks(wds, 1000)):
             print(f'Chunk #{ic}')
             # print(chunk[0]['_id'])
 
-            stars = [(c['ra'], c['dec']) for c in chunk]
+            # {name: (ra, dec)}
+            stars = {c['_id']: (c['ra'], c['dec']) for c in chunk}
             # print(stars)
 
-            matches = cross_match(kowalski, _jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
-            non_empty_matches = {m: v for m, v in matches.items() if v is not None}
-            print(len(non_empty_matches))
-            total_detected += len(non_empty_matches)
+            # run cone search on the batch
+            matches = self.cross_match(_jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
+
+            print(list(matches.keys()))
+
+            total_detected += len(matches)
             print(f'total detected so far: {total_detected}')
 
-            # raise Exception('HALT!!')
+            if len(matches) > 0:
+                # get full WD info for matched objects:
+                wds = self.get_doc_by_id(_coll='Gaia_DR2_WD', _ids=list(map(int, matches.keys())), retries=3)
 
-            # ingest every matched object into own db. for starters, just count the number
+                # append to corresponding matches
+                print(list(matches.keys()))
+                for match in matches.keys():
+                    for alert in matches[match]:
+                        alert['xmatch'] = dict()
+                        alert['xmatch']['nearest_within_5_arcsec'] = {'Gaia_DR2_WD': wds[int(match)]}
+
+                        print(alert['_id'], alert['coordinates'],
+                              alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id'])
+
+                # ingest every matched object into own db. It's not that many, so just dump everything
+
+            # raise Exception('HALT!!')
 
         print(f'total detected: {total_detected}')
 
 
+def main(_config_file: str):
+    """
+        Cross-match a night worth of ZTF alerts with a catalog of white dwarfs from Gaia DR2
+    """
+
+    wd = WhiteDwarf(config_file=_config_file)
+
+    wd.run()
+
+    # # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
+    # utc_date = datetime.datetime.utcnow()
+    # utc_date = datetime.datetime(utc_date.year, utc_date.month, utc_date.day)
+    #
+    # # convert to jd
+    # jd_date = Time(utc_date).jd
+    # print(utc_date, jd_date)
+    #
+    # # connect to Kowalski
+    # # get WD coordinates (extracted from Kowalski)
+    # # with open('/app/wds.20180811.json') as wdjson:
+    # with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
+    #     wds = json.load(wdjson)['query_result']
+    # # print(wds[:3])
+    #
+    # total_detected = 0
+    #
+    # with Kowalski(username=secrets['kowalski']['user'],
+    #               password=secrets['kowalski']['password']) as kowalski:
+    #     # host='localhost', port=8082, protocol='http'
+    #
+    #     # for batch_size run a cross match with ZTF_alerts for current UTC
+    #     for ic, chunk in enumerate(chunks(wds, 1000)):
+    #         print(f'Chunk #{ic}')
+    #         # print(chunk[0]['_id'])
+    #
+    #         # {name: (ra, dec)}
+    #         stars = {c['_id']: (c['ra'], c['dec']) for c in chunk}
+    #         # print(stars)
+    #
+    #         # run cone search on the batch
+    #         matches = cross_match(kowalski, _jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
+    #
+    #         print(list(matches.keys()))
+    #
+    #         total_detected += len(matches)
+    #         print(f'total detected so far: {total_detected}')
+    #
+    #         if len(matches) > 0:
+    #             # get full WD info for matched objects:
+    #             wds = get_doc_by_id(kowalski, _coll='Gaia_DR2_WD',
+    #                                 _ids=list(map(int, matches.keys())), retries=3)
+    #
+    #             # append to corresponding matches
+    #             print(list(matches.keys()))
+    #             for match in matches.keys():
+    #                 for alert in matches[match]:
+    #                     alert['xmatch'] = dict()
+    #                     alert['xmatch']['nearest_within_5_arcsec'] = {'Gaia_DR2_WD': wds[int(match)]}
+    #
+    #                     print(alert['_id'], alert['coordinates'],
+    #                           alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id'])
+    #
+    #             # ingest every matched object into own db. It's not that many, so just dump everything
+    #
+    #         # raise Exception('HALT!!')
+    #
+    #     print(f'total detected: {total_detected}')
+
+
 if __name__ == '__main__':
-    main()
+    ''' Create command line argument parser '''
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description='White Dwarfs with ZTF')
+
+    parser.add_argument('config_file', metavar='config_file',
+                        action='store', help='path to config file.', type=str)
+
+    args = parser.parse_args()
+
+    main(_config_file=args.config_file)
