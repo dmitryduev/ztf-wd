@@ -14,6 +14,16 @@ from penquins import Kowalski
 import numpy as np
 # import unittest
 
+import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
+from PIL import Image
+import io
+import gzip
+from astropy.io import fits
+from matplotlib.colors import LogNorm
+import matplotlib.pyplot as plt
+
 # with open('/app/crontest.txt', 'w') as f:
 #     f.write(str(datetime.datetime.utcnow()))
 
@@ -417,6 +427,60 @@ class WhiteDwarf(object):
 
         return {}
 
+    def dump_cutout(self, alert, save_fits=False):
+        path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
+
+        if not os.path.exists(path_out):
+            os.makedirs(path_out)
+
+        for tag in ('science', 'template', 'difference'):
+
+            data = alert[f'cutout{tag.capitalize()}']['stampData']
+
+            tmp = io.BytesIO()
+            tmp.write(data)
+            tmp.seek(0)
+
+            # new format? try to decompress loss-less fits:
+            try:
+                decompressed_file = gzip.GzipFile(fileobj=tmp, mode='rb')
+
+                with fits.open(decompressed_file) as dff:
+                    if save_fits:
+                        dff.writeto(os.path.join(path_out, f'{tag}.fits'), overwrite=True)
+                    # print(dff[0].data)
+
+                    img = dff[0].data
+
+                    plt.close('all')
+                    fig = plt.figure()
+                    fig.set_size_inches(4, 4, forward=False)
+                    ax = plt.Axes(fig, [0., 0., 1., 1.])
+                    ax.set_axis_off()
+                    fig.add_axes(ax)
+
+                    # remove nans:
+                    img = np.array(img)
+                    img = np.nan_to_num(img)
+
+                    if tag != 'difference':
+                        # img += np.min(img)
+                        img[img <= 0] = np.median(img)
+                        plt.imshow(img, cmap='gray', norm=LogNorm(), origin='lower')
+                    else:
+                        plt.imshow(img, cmap='gray', origin='lower')
+                    plt.savefig(os.path.join(path_out, f'{tag}.jpg'), dpi=50)
+
+            # failed? try old jpg format
+            except Exception as _e:
+                traceback.print_exc()
+                self.logger.error(str(_e))
+                try:
+                    tmp.seek(0)
+                    Image.open(tmp).save(os.path.join(path_out, f'{tag}.jpg'))
+                finally:
+                    self.logger.error(f'Failed to save stamp: {alert[_id]} {tag}')
+
     def run(self):
         # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
         utc_date = datetime.datetime.utcnow()
@@ -466,6 +530,9 @@ class WhiteDwarf(object):
                                           alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id']))
 
                         matches_to_ingest.append(alert)
+
+                        # generate previews for the endpoint
+                        self.dump_cutout(alert, save_fits=False)
 
             # raise Exception('HALT!!')
 
