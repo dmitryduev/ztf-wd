@@ -1,2 +1,2 @@
-* * * * * /usr/local/bin/python /app/fetch.py /app/config.json
+0 19 * * * /usr/local/bin/python /app/fetch.py /app/config.json
 # An empty line is required at the end of this file for a valid cron file.

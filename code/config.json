@@ -16,6 +16,7 @@
     "path_logs": "/app/logs/",
     "path_alerts": "/alerts/",
     "path_tmp": "/app/_tmp/",
+    "path_wd_db": "/app/wds.20180811.json",
     "help": {
       "self": "path to all kinds of stuff. these are internal container paths",
       "path_logs": "path to store logs",

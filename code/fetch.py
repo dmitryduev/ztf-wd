@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import time
+import pytz
 import traceback
 import pymongo
 from astropy.time import Time
@@ -17,8 +18,8 @@ import numpy as np
 #     f.write(str(datetime.datetime.utcnow()))
 
 # load secrets:
-# with open('/app/secrets.json') as sjson:
-with open('/Users/dmitryduev/_caltech/python/ztf-wd/secrets.json') as sjson:
+# with open('/Users/dmitryduev/_caltech/python/ztf-wd/secrets.json') as sjson:
+with open('/app/secrets.json') as sjson:
     secrets = json.load(sjson)
 
 
@@ -33,74 +34,17 @@ with open('/Users/dmitryduev/_caltech/python/ztf-wd/secrets.json') as sjson:
 #                 self.assertRaises(TypeError, cross_match, c, msg=f'TypeError not raised on: {c}')
 
 
-def cross_match(_kowalski, _jd, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
-
-    for ir in range(retries):
-        try:
-            print(f'Querying Kowalski, attempt {ir+1}')
-            # query Kowalski for Gaia stars:
-            # if False:
-            q = {"query_type": "cone_search",
-                 "object_coordinates": {"radec": str(_stars),
-                                        "cone_search_radius": str(_fov_size_ref_arcsec),
-                                        "cone_search_unit": "arcsec"},
-                 "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}},
-                                             "projection": {}}
-                              }
-                 }
-            # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
-            # {"_id": 1, "objectId": 1,
-            #                                                             "candid": 1,
-            #                                                             "candidate.jd": 1,
-            #                                                             "candidate.programid": 1,
-            #                                                             "candidate.rb": 1,
-            #                                                             "candidate.magpsf": 1,
-            #                                                             "candidate.sigmapsf": 1}
-            # ,
-            #                               "Gaia_DR2_WD": {"filter": {},
-            #                                               "projection": {"_id": 1, "coordinates": 0}}
-            # print(q)
-            r = _kowalski.query(query=q, timeout=20)
-            # print(r)
-
-            matches = r['result']['ZTF_alerts']
-
-            # only return non-empty matches:
-            non_empty_matches = {m: v for m, v in matches.items() if v is not None}
-
-            return non_empty_matches
-
-        except Exception as _e:
-            print(_e)
-            continue
-
-    return {}
+def utc_now():
+    return datetime.datetime.now(pytz.utc)
 
 
-def get_doc_by_id(_kowalski, _coll: str, _ids: list, retries=3) -> dict:
+def time_stamps():
+    """
 
-    for ir in range(retries):
-        try:
-            print(f'Querying Kowalski, attempt {ir+1}')
-            q = {"query_type": "general_search",
-                 "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
-                 }
-            # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
-            # print(q)
-            r = _kowalski.query(query=q, timeout=10)
-            # print(r)
-            result = r['result']['query_result']
-
-            # convert to dict id -> result
-            matches = {obj['_id']: obj for obj in result}
-
-            return matches
-
-        except Exception as _e:
-            print(_e)
-            continue
-
-    return {}
+    :return: local time, UTC time
+    """
+    return datetime.datetime.now().strftime('%Y%m%d_%H:%M:%S'), \
+           datetime.datetime.utcnow().strftime('%Y%m%d_%H:%M:%S')
 
 
 def chunks(l, n):
@@ -132,12 +76,12 @@ class WhiteDwarf(object):
             # host='localhost', port=8082, protocol='http'
 
             ''' init db if necessary '''
-            # self.init_db()
+            self.init_db()
 
             ''' connect to db: '''
             self.db = None
             # will exit if this fails
-            # self.connect_to_db()
+            self.connect_to_db()
 
         except Exception as e:
             print(e)
@@ -259,7 +203,7 @@ class WhiteDwarf(object):
         if f'{db_name}.{username}' not in user_ids:
             _client[db_name].command('createUser', self.config['database']['user'],
                                      pwd=self.config['database']['pwd'], roles=['readWrite'])
-            print('Successfully initialized db')
+            self.logger.info('Successfully initialized db')
 
     def connect_to_db(self):
         """
@@ -294,18 +238,6 @@ class WhiteDwarf(object):
                 self.logger.error('Authentication failed for the database at {:s}:{:d}'.
                                   format(_config['database']['host'], _config['database']['port']))
             raise ConnectionRefusedError
-        try:
-            # get collection with observations
-            _coll_obs = _db[_config['database']['collection_obs']]
-            if self.logger is not None:
-                self.logger.debug('Using collection {:s} with obs data in the database'.
-                                  format(_config['database']['collection_obs']))
-        except Exception as _e:
-            if self.logger is not None:
-                self.logger.error(_e)
-                self.logger.error('Failed to use a collection {:s} with obs data in the database'.
-                                  format(_config['database']['collection_obs']))
-            raise NameError
 
         if self.logger is not None:
             self.logger.debug('Successfully connected to database at {:s}:{:d}'.
@@ -315,7 +247,6 @@ class WhiteDwarf(object):
         self.db = dict()
         self.db['client'] = _client
         self.db['db'] = _db
-        self.db['coll_obs'] = _coll_obs
 
     # @timeout(seconds_before_timeout=120)
     def disconnect_from_db(self):
@@ -348,7 +279,6 @@ class WhiteDwarf(object):
             try:
                 self.connect_to_db()
             except Exception as e:
-                print('Lost database connection.')
                 self.logger.error('Lost database connection.')
                 self.logger.error(e)
                 return False
@@ -358,18 +288,73 @@ class WhiteDwarf(object):
                 # to be useless here
                 self.db['client'].server_info()
             except pymongo.errors.ServerSelectionTimeoutError as e:
-                print('Lost database connection.')
                 self.logger.error('Lost database connection.')
                 self.logger.error(e)
                 return False
 
         return True
 
+    def insert_db_entry(self, _collection=None, _db_entry=None):
+        """
+            Insert a document _doc to collection _collection in DB.
+            It is monitored for timeout in case DB connection hangs for some reason
+        :param _collection:
+        :param _db_entry:
+        :return:
+        """
+        assert _collection is not None, 'Must specify collection'
+        assert _db_entry is not None, 'Must specify document'
+        try:
+            self.db['db'][_collection].insert_one(_db_entry)
+        except Exception as _e:
+            self.logger.info('Error inserting {:s} into {:s}'.format(str(_db_entry['_id']), _collection))
+            traceback.print_exc()
+            self.logger.error(_e)
+
+    def insert_multiple_db_entries(self, _collection=None, _db_entries=None):
+        """
+            Insert a document _doc to collection _collection in DB.
+            It is monitored for timeout in case DB connection hangs for some reason
+        :param _db:
+        :param _collection:
+        :param _db_entries:
+        :return:
+        """
+        assert _collection is not None, 'Must specify collection'
+        assert _db_entries is not None, 'Must specify documents'
+        try:
+            # ordered=False ensures that every insert operation will be attempted
+            # so that if, e.g., a document already exists, it will be simply skipped
+            self.db['db'][_collection].insert_many(_db_entries, ordered=False)
+        except pymongo.errors.BulkWriteError as bwe:
+            self.logger.info(bwe.details)
+        except Exception as _e:
+            traceback.print_exc()
+            self.logger.error(_e)
+
+    def replace_db_entry(self, _collection=None, _filter=None, _db_entry=None):
+        """
+            Insert a document _doc to collection _collection in DB.
+            It is monitored for timeout in case DB connection hangs for some reason
+        :param _collection:
+        :param _filter:
+        :param _db_entry:
+        :return:
+        """
+        assert _collection is not None, 'Must specify collection'
+        assert _db_entry is not None, 'Must specify document'
+        try:
+            self.db['db'][_collection].replace_one(_filter, _db_entry, upsert=True)
+        except Exception as _e:
+            self.logger.info('Error replacing {:s} in {:s}'.format(str(_db_entry['_id']), _collection))
+            traceback.print_exc()
+            self.logger.error(_e)
+
     def cross_match(self, _jd, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
 
         for ir in range(retries):
             try:
-                print(f'Querying Kowalski, attempt {ir+1}')
+                self.logger.debug(f'Querying Kowalski, attempt {ir+1}')
                 # query Kowalski for Gaia stars:
                 # if False:
                 q = {"query_type": "cone_search",
@@ -403,7 +388,7 @@ class WhiteDwarf(object):
                 return non_empty_matches
 
             except Exception as _e:
-                print(_e)
+                self.logger.error(_e)
                 continue
 
         return {}
@@ -412,7 +397,7 @@ class WhiteDwarf(object):
 
         for ir in range(retries):
             try:
-                print(f'Querying Kowalski, attempt {ir+1}')
+                self.logger.debug(f'Querying Kowalski, attempt {ir+1}')
                 q = {"query_type": "general_search",
                      "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
                      }
@@ -427,7 +412,7 @@ class WhiteDwarf(object):
                 return matches
 
             except Exception as _e:
-                print(_e)
+                self.logger.error(_e)
                 continue
 
         return {}
@@ -439,17 +424,19 @@ class WhiteDwarf(object):
 
         # convert to jd
         jd_date = Time(utc_date).jd
-        print(utc_date, jd_date)
+        self.logger.info('Starting cycle: {} {}'.format(str(utc_date), str(jd_date)))
 
-        # with open('/app/wds.20180811.json') as wdjson:
-        with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
+        # with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
+        with open(self.config['path']['path_wd_db']) as wdjson:
             wds = json.load(wdjson)['query_result']
 
         total_detected = 0
 
+        matches_to_ingest = []
+
         # for batch_size run a cross match with ZTF_alerts for current UTC
         for ic, chunk in enumerate(chunks(wds, 1000)):
-            print(f'Chunk #{ic}')
+            self.logger.info(f'Chunk #{ic}')
             # print(chunk[0]['_id'])
 
             # {name: (ra, dec)}
@@ -459,30 +446,45 @@ class WhiteDwarf(object):
             # run cone search on the batch
             matches = self.cross_match(_jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
 
-            print(list(matches.keys()))
+            self.logger.debug(list(matches.keys()))
 
             total_detected += len(matches)
-            print(f'total detected so far: {total_detected}')
+            self.logger.info(f'total detected so far: {total_detected}')
 
             if len(matches) > 0:
                 # get full WD info for matched objects:
                 wds = self.get_doc_by_id(_coll='Gaia_DR2_WD', _ids=list(map(int, matches.keys())), retries=3)
 
                 # append to corresponding matches
-                print(list(matches.keys()))
+                self.logger.debug(list(matches.keys()))
                 for match in matches.keys():
                     for alert in matches[match]:
                         alert['xmatch'] = dict()
                         alert['xmatch']['nearest_within_5_arcsec'] = {'Gaia_DR2_WD': wds[int(match)]}
 
-                        print(alert['_id'], alert['coordinates'],
-                              alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id'])
+                        self.logger.debug('{} {}'.format(alert['_id'],
+                                          alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id']))
 
-                # ingest every matched object into own db. It's not that many, so just dump everything
+                        matches_to_ingest.append(alert)
 
             # raise Exception('HALT!!')
 
-        print(f'total detected: {total_detected}')
+        # collection_obs
+        # ingest every matched object into own db. It's not that many, so just dump everything
+        if len(matches_to_ingest) > 0:
+            self.insert_multiple_db_entries(_collection=self.config['database']['collection_obs'],
+                                            _db_entries=matches_to_ingest)
+
+        self.logger.info(f'total detected: {total_detected}')
+
+        self.logger.info('Creating 2d index')
+        self.db['db'][self.config['database']['collection_obs']].create_index([('coordinates.radec_geojson',
+                                                                                '2dsphere')])
+
+        self.logger.info('All done')
+
+    def shutdown(self):
+        self.kowalski.close()
 
 
 def main(_config_file: str):
@@ -494,64 +496,7 @@ def main(_config_file: str):
 
     wd.run()
 
-    # # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
-    # utc_date = datetime.datetime.utcnow()
-    # utc_date = datetime.datetime(utc_date.year, utc_date.month, utc_date.day)
-    #
-    # # convert to jd
-    # jd_date = Time(utc_date).jd
-    # print(utc_date, jd_date)
-    #
-    # # connect to Kowalski
-    # # get WD coordinates (extracted from Kowalski)
-    # # with open('/app/wds.20180811.json') as wdjson:
-    # with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
-    #     wds = json.load(wdjson)['query_result']
-    # # print(wds[:3])
-    #
-    # total_detected = 0
-    #
-    # with Kowalski(username=secrets['kowalski']['user'],
-    #               password=secrets['kowalski']['password']) as kowalski:
-    #     # host='localhost', port=8082, protocol='http'
-    #
-    #     # for batch_size run a cross match with ZTF_alerts for current UTC
-    #     for ic, chunk in enumerate(chunks(wds, 1000)):
-    #         print(f'Chunk #{ic}')
-    #         # print(chunk[0]['_id'])
-    #
-    #         # {name: (ra, dec)}
-    #         stars = {c['_id']: (c['ra'], c['dec']) for c in chunk}
-    #         # print(stars)
-    #
-    #         # run cone search on the batch
-    #         matches = cross_match(kowalski, _jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
-    #
-    #         print(list(matches.keys()))
-    #
-    #         total_detected += len(matches)
-    #         print(f'total detected so far: {total_detected}')
-    #
-    #         if len(matches) > 0:
-    #             # get full WD info for matched objects:
-    #             wds = get_doc_by_id(kowalski, _coll='Gaia_DR2_WD',
-    #                                 _ids=list(map(int, matches.keys())), retries=3)
-    #
-    #             # append to corresponding matches
-    #             print(list(matches.keys()))
-    #             for match in matches.keys():
-    #                 for alert in matches[match]:
-    #                     alert['xmatch'] = dict()
-    #                     alert['xmatch']['nearest_within_5_arcsec'] = {'Gaia_DR2_WD': wds[int(match)]}
-    #
-    #                     print(alert['_id'], alert['coordinates'],
-    #                           alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['_id'])
-    #
-    #             # ingest every matched object into own db. It's not that many, so just dump everything
-    #
-    #         # raise Exception('HALT!!')
-    #
-    #     print(f'total detected: {total_detected}')
+    wd.shutdown()
 
 
 if __name__ == '__main__':
