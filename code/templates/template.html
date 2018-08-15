@@ -20,12 +20,17 @@
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="{{-script_root-}}/static/css/animate.css">
     <link rel="stylesheet" href="{{-script_root-}}/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{-script_root-}}/static/css/font-awesome.min.css">
+{#    <link rel="stylesheet" href="{{-script_root-}}/static/css/font-awesome.min.css">#}
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+          integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
     <link rel="stylesheet" href="{{-script_root-}}/static/css/ztf.css">
 
     {# custom css #}
     {% block css %}
     {% endblock %}
+
+    {# jquery #}
+    <script src="{{-script_root-}}/static/js/jquery-3.2.1.min.js"></script>
 
 </head>
 
@@ -45,25 +50,28 @@
 {#            <li class="nav-item {% block nav_home %}{% endblock %}">#}
 {#                <a class="nav-link" href="/">Home</a>#}
 {#            </li>#}
-{#            <li class="nav-item {% block nav_tutorials %}{% endblock %}">#}
-{#                <a class="nav-link" href="/tutorials">Tutorials</a>#}
-{#            </li>#}
+            {% block date_range_picker %}{% endblock %}
         </ul>
-        <ul class="navbar-nav navbar-right">
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Logged in as <strong>{{ user }}</strong>
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    {% if user == 'admin' %}
-                        <a class="dropdown-item" href="{{-script_root-}}/manage_users">Manage users</a>
-                        <a class="dropdown-item" href="{{-script_root-}}/stats">Stats</a>
-                    {% endif %}
-                    <a class="dropdown-item" href="{{-script_root-}}/logout">Log out</a>
-                </div>
-            </li>
 
+        <ul class="navbar-nav navbar-right">
+            {% if user != None %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Logged in as <strong>{{ user }}</strong>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        {% if user == 'admin' %}
+                            <a class="dropdown-item" href="{{-script_root-}}/users">Manage users</a>
+                        {% endif %}
+                        <a class="dropdown-item" href="{{-script_root-}}/logout">Log out</a>
+                    </div>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/login">Login</a>
+                </li>
+            {% endif %}
         </ul>
     </div>
 </nav>
@@ -82,7 +90,6 @@
 </footer>
 
 <!-- JavaScript -->
-<script src="{{-script_root-}}/static/js/jquery-3.2.1.min.js"></script>
 <script src="{{-script_root-}}/static/js/popper.min.js"></script>
 <script src="{{-script_root-}}/static/js/masonry.pkgd.js"></script>
 <script src="{{-script_root-}}/static/js/bootstrap.min.js"></script>

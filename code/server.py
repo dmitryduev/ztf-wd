@@ -26,9 +26,9 @@ def add_admin():
     ex_admin = mongo.db.users.find_one({'_id': secrets['database']['admin_username']})
     if ex_admin is None:
         mongo.db.users.insert_one({'_id': secrets['database']['admin_username'],
-                                    'password': generate_password_hash(secrets['database']['admin_password']),
-                                    'last_modified': utc_now()
-                                    })
+                                   'password': generate_password_hash(secrets['database']['admin_password']),
+                                   'last_modified': utc_now()
+                                   })
 
 
 ''' load config '''
@@ -42,6 +42,9 @@ with open('/app/secrets.json') as sjson:
 app = flask.Flask(__name__)
 # add 'do' statement to jinja environment (does the same as {{ }}, but returns nothing):
 app.jinja_env.add_extension('jinja2.ext.do')
+
+# set up secret key:
+app.secret_key = config['server']['SECRET_KEY']
 
 # config db
 app.config["MONGO_URI"] = f"mongodb://{config['database']['user']}:{config['database']['pwd']}@" + \
@@ -65,6 +68,7 @@ class User(flask_login.UserMixin):
 def user_loader(username):
     select = mongo.db.users.find_one({'_id': username})
     if select is None:
+        # return None
         return
 
     user = User()
@@ -87,6 +91,7 @@ def request_loader(request):
         user.is_authenticated = check_password_hash(select['password'], flask.request.form['password'])
     except Exception as _e:
         print(_e)
+        # return None
         return
 
     return user
@@ -98,6 +103,7 @@ def login():
         Endpoint for login through the web interface
     :return:
     """
+    print(flask_login.current_user)
     if flask.request.method == 'GET':
         # logged in already?
         if flask_login.current_user.is_authenticated:
@@ -314,11 +320,12 @@ def root():
         Endpoint for the web GUI homepage
     :return:
     """
-    # try:
-    #     user_id = str(flask_login.current_user.id)
-    # except:
-    #     user_id = None
-    user_id = None
+    # return flask.render_template('template.html')
+    try:
+        user_id = str(flask_login.current_user.id)
+    except Exception as e:
+        print(e)
+        user_id = None
 
     messages = []
 
