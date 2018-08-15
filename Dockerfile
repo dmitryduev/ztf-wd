@@ -32,6 +32,6 @@ WORKDIR /app
 
 # run flask server with gunicorn
 #CMD /usr/local/bin/supervisord -n -c supervisord.conf
-#CMD gunicorn -w 4 -b 127.0.0.1:4000 server:app
+#CMD cron && gunicorn -w 4 -b 0.0.0.0:4000 server:app
 CMD cron && /bin/bash
-#CMD cron && python server.py config.json
+#CMD cron && python server.py
