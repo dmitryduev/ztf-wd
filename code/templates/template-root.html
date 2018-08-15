@@ -82,8 +82,8 @@
 
         <div id="toolbar" class="btn-group">
                 <button type="button" class="btn btn-outline-dark"
-                        style="cursor: pointer;" onclick="expand_all()">
-                    <i class="fas fa-plus" aria-hidden="true"></i>
+                        style="cursor: pointer;" onclick="toggle_expansion()">
+                    <i id="expansion_toggle" class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
             <table id="table"
@@ -385,6 +385,18 @@
             ]
         });
 
+        // display details
+        function detailFormatter(index, row, element) {
+            var html = [];
+            var cutouts = ["science.jpg", "template.jpg", "difference.jpg"];
+
+            cutouts.forEach(function (cutout) {
+                html.push("<img src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +"' class='mr-1 mb-1'>")
+            });
+
+            return html.join('');
+        }
+
 
         // reset height of table with search results
         function resetTableHeight() {
@@ -433,8 +445,14 @@
         }
 
         {# expand all rows in table #}
-        function expand_all(){
-
+        function toggle_expansion(){
+            if ($("#expansion_toggle").hasClass('fa-plus')) {
+                $('#table').bootstrapTable('expandAllRows', false);
+            }
+            else {
+                $('#table').bootstrapTable('collapseAllRows', false);
+            }
+            $("#expansion_toggle").toggleClass('fa-plus fa-minus');
         }
 
 
