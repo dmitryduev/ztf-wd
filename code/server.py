@@ -1,4 +1,5 @@
 import traceback
+from astropy.time import Time
 import flask
 import flask_login
 import flask_pymongo
@@ -327,15 +328,51 @@ def root():
         print(e)
         user_id = None
 
-    messages = []
+    # messages = []
 
-    # get white dwarfs detected in time range
-    dwarfs = []
+    # get time range:
+    if 'start' in flask.request.args:
+        date_start = flask.request.args['start']
+    else:
+        date_start = datetime.datetime.utcnow().strftime('%Y%m%d')
+    if 'end' in flask.request.args:
+        date_end = flask.request.args['end']
+    else:
+        date_end = datetime.datetime.utcnow().strftime('%Y%m%d')
+
+    # print(date_start, date_end)
+
+    # compute jd range:
+    dt_start = datetime.datetime.strptime(date_start, '%Y%m%d')
+    jd_start = Time(dt_start).jd
+    if date_end == date_start:
+        dt_end = dt_start + datetime.timedelta(days=1)
+        jd_end = Time(dt_end).jd
+    else:
+        dt_end = datetime.datetime.strptime(date_end, '%Y%m%d')
+        jd_end = Time(dt_end).jd
+
+    print(jd_start, jd_end)
+
+    # get white dwarfs detected in jd time range
+    if user_id is None:
+        # Anonymous only gets MSIP data
+        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end},
+                                           'candidate.programid': {'$eq': 1}},
+                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+    else:
+        # Shri gets it all
+        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end}},
+                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+
+    alerts = list(cursor) if cursor is not None else []
+
+    # TODO: yield from pymongo cursor instead of converting to list all at once
 
     return flask.Response(stream_template('template-root.html',
                                           user=user_id,
                                           logo=config['server']['logo'],
-                                          dwarfs=dwarfs))
+                                          alerts=alerts))
 
 
 def stream_template(template_name, **context):

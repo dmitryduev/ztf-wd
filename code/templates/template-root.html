@@ -6,56 +6,86 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 {% endblock %}
 
-{#{% block nav_home %}#}
-{#    active#}
-{#{% endblock %}#}
-
-{% block date_range_picker %}
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-
-    <div id="reportrange"
-         style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;">
-        <i class="far fa-calendar-alt"></i>&nbsp;
-        <span></span> <i class="fas fa-caret-down"></i>
-    </div>
-
-    <script type="text/javascript">
-    $(function() {
-
-        var start = moment().utc().subtract(1, 'days');
-        var end = moment().utc();
-
-        function cb(start, end) {
-            $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-        }
-
-        $('#reportrange').daterangepicker({
-            startDate: start,
-            endDate: end,
-            minDate: "09/01/2017",
-            maxDate: end,
-            ranges: {
-               'Today': [moment(), moment()],
-               'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-               'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-               'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-               'This Month': [moment().startOf('month'), moment().endOf('month')],
-               'Last Month': [moment().subtract(1, 'month').startOf('month'),
-                              moment().subtract(1, 'month').endOf('month')]
-            }
-        }, cb);
-
-        cb(start, end);
-
-    });
-    </script>
+{% block nav_home %}
+    active
 {% endblock %}
+
+{#{% block date_range_picker %}#}
+{#{% endblock %}#}
 
 {% block body %}
 
     <div class="container">
+        <div class="row mb-2">
+            <div class="col-md-8 mb-2">
+                <h3>White dwarfs detected with ZTF</h3>
+            </div>
+            <div class="col-md-4">
+                <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+                <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
+                <div id="reportrange"
+                     style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                    <i class="far fa-calendar-alt"></i>&nbsp;
+                    <span></span> <i class="fas fa-caret-down"></i>
+                </div>
+
+                <script type="text/javascript">
+                $(function() {
+
+                    {#var start = moment().utc().subtract(1, 'days').startOf('day');#}
+                    var start = moment().utc().startOf('day');
+                    var end = moment().utc();
+
+                    function cb(start, end) {
+                        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+                    }
+
+                    $('#reportrange').daterangepicker({
+                        startDate: start,
+                        endDate: end,
+                        minDate: moment('20170901', 'YYYYMMDD'),
+                        maxDate: end,
+                        opens: "left",
+                        ranges: {
+                           'Today': [moment().utc().startOf('day'), moment().utc().add(1, 'days').startOf('day')],
+                           'Yesterday': [moment().utc().subtract(1, 'days').startOf('day'),
+                                         moment().utc().startOf('day')],
+                           'Last 7 Days': [moment().utc().subtract(6, 'days').startOf('day'),
+                                           moment().utc().add(1, 'days').startOf('day')],
+                           'Last 30 Days': [moment().utc().subtract(29, 'days').startOf('day'),
+                                            moment().utc().add(1, 'days').startOf('day')],
+                           'This Month': [moment().utc().startOf('month'),
+                                          moment().utc().endOf('month')],
+                           'Last Month': [moment().utc().subtract(1, 'month').startOf('month'),
+                                          moment().utc().subtract(1, 'month').endOf('month')],
+                           'Everything': [moment('20170901', 'YYYYMMDD'), moment().utc()]
+                        }
+                    }, cb);
+
+                    cb(start, end);
+
+                    $('#reportrange').on('apply.daterangepicker', function(ev, picker) {
+                        var start = picker.startDate.format('YYYYMMDD');
+                        var end = picker.endDate.format('YYYYMMDD');
+                        window.location.href = "?start=" + start + "&end=" + end;
+                    });
+
+                });
+                </script>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-12">
+                {% for alert in alerts %}
+                    {{  alert['_id'] }}<br>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <!-- Modal -->
@@ -79,6 +109,16 @@
             </div>
         </div>
     </div>
+
+    {# propagate date ranges #}
+    {% if request.args.get('start') != None and request.args.get('end') != None %}
+    <script>
+        $(document).ready(function() {
+            $('#reportrange').data('daterangepicker').setStartDate(moment('{{ request.args.get('start') }}', 'YYYYMMDD'));
+            $('#reportrange').data('daterangepicker').setEndDate(moment('{{ request.args.get('end') }}', 'YYYYMMDD'));
+        });
+    </script>
+    {% endif %}
 
 {% endblock %}
 

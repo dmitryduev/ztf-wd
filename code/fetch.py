@@ -360,7 +360,7 @@ class WhiteDwarf(object):
             traceback.print_exc()
             self.logger.error(_e)
 
-    def cross_match(self, _jd, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
+    def cross_match(self, _jd_start, _jd_end, _stars: dict, _fov_size_ref_arcsec=2, retries=3) -> dict:
 
         for ir in range(retries):
             try:
@@ -371,7 +371,8 @@ class WhiteDwarf(object):
                      "object_coordinates": {"radec": str(_stars),
                                             "cone_search_radius": str(_fov_size_ref_arcsec),
                                             "cone_search_unit": "arcsec"},
-                     "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}},
+                     "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd_start,
+                                                                             "$lt": _jd_end}},
                                                  "projection": {}}
                                   }
                      }
@@ -481,7 +482,16 @@ class WhiteDwarf(object):
                 finally:
                     self.logger.error(f'Failed to save stamp: {alert[_id]} {tag}')
 
-    def run(self):
+    def get_ps1_image(self, alert):
+        """
+
+        :param alert:
+        :return:
+        """
+        # TODO: get PanSTARRS image
+        pass
+
+    def run(self, _all=False):
         # compute current UTC. the script is run everyday at 19:00 UTC (~noon in LA)
         utc_date = datetime.datetime.utcnow()
         utc_date = datetime.datetime(utc_date.year, utc_date.month, utc_date.day)
@@ -489,6 +499,17 @@ class WhiteDwarf(object):
         # convert to jd
         jd_date = Time(utc_date).jd
         self.logger.info('Starting cycle: {} {}'.format(str(utc_date), str(jd_date)))
+
+        if not _all:
+            # grab last night only
+            jd_start = jd_date
+            jd_end = jd_date + 1
+        else:
+            # grab everything:
+            utc_date_survey_start = datetime.datetime(2017, 9, 1)
+            jd_date_survey_start = Time(utc_date_survey_start).jd
+            jd_start = jd_date_survey_start
+            jd_end = jd_date + 1
 
         # with open('/Users/dmitryduev/_caltech/python/ztf-wd/code/wds.20180811.json') as wdjson:
         with open(self.config['path']['path_wd_db']) as wdjson:
@@ -508,7 +529,8 @@ class WhiteDwarf(object):
             # print(stars)
 
             # run cone search on the batch
-            matches = self.cross_match(_jd=jd_date, _stars=stars, _fov_size_ref_arcsec=2, retries=3)
+            matches = self.cross_match(_jd_start=jd_start, _jd_end=jd_end,
+                                       _stars=stars, _fov_size_ref_arcsec=2, retries=3)
 
             self.logger.debug(list(matches.keys()))
 
@@ -554,14 +576,14 @@ class WhiteDwarf(object):
         self.kowalski.close()
 
 
-def main(_config_file: str):
+def main(_config_file: str, _all: bool):
     """
         Cross-match a night worth of ZTF alerts with a catalog of white dwarfs from Gaia DR2
     """
 
     wd = WhiteDwarf(config_file=_config_file)
 
-    wd.run()
+    wd.run(_all)
 
     wd.shutdown()
 
@@ -569,11 +591,13 @@ def main(_config_file: str):
 if __name__ == '__main__':
     ''' Create command line argument parser '''
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     description='White Dwarfs with ZTF')
+                                     description='Fetch White Dwarfs detected with ZTF (last night)')
 
     parser.add_argument('config_file', metavar='config_file',
                         action='store', help='path to config file.', type=str)
+    parser.add_argument('--all', action='store_true',
+                        help='fetch all alerts available available on Kowalski')
 
     args = parser.parse_args()
 
-    main(_config_file=args.config_file)
+    main(_config_file=args.config_file, _all=args.all)
