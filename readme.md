@@ -34,7 +34,7 @@ Create file secrets.json with the Kowalski login credentials:
 Build and launch the main container:
 ```bash
 docker build -t ztf-wd -f Dockerfile .
-docker run --name ztf-wd -d --restart always -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
+docker run --name ztf-wd -d --restart always -p 8002:4000 -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 # test mode:
-docker run -it --rm --name ztf-wd -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
+docker run -it --rm --name ztf-wd -p 8002:4000 -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd
 ```

@@ -1,8 +1,10 @@
 {
   "server": {
+    "logo": "ZTF White Dwarfs",
     "environment": "test",
     "host": "0.0.0.0",
-    "port": "8082",
+    "port": "4000",
+    "SECRET_KEY": "very_secret_key",
     "help": {
       "self": "global server settings",
       "host": "host ip for test env deployment",
@@ -34,6 +36,7 @@
     "user": "ztf",
     "pwd": "ztfkicksass",
     "collection_obs": "ZTF_alerts",
+    "collection_users": "users",
     "help": {
       "self": "Details about the database",
       "host": "host running MongoDB",

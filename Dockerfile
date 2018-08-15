@@ -30,7 +30,8 @@ ADD code/ /app/
 # change working directory to /app
 WORKDIR /app
 
-# run flask server with gunicorn?
+# run flask server with gunicorn
 #CMD /usr/local/bin/supervisord -n -c supervisord.conf
+#CMD gunicorn -w 4 -b 127.0.0.1:4000 server:app
 CMD cron && /bin/bash
 #CMD cron && python server.py config.json
