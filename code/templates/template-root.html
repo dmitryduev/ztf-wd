@@ -107,17 +107,56 @@
                 <thead>
                 <tr>
 {#                    <th data-field="state" data-checkbox="true"></th>#}
+                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter"
+                        data-field="objectId">objectId</th>
+                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter"
+                        data-field="candid">candid</th>
+                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="obs_date">date, UTC</th>
+
+                    <th colspan="5" data-field="candidate">candidate</th>
+                    <th colspan="2" data-field="cordinates">cordinates</th>
+                    <th colspan="10" data-field="wd">white dwarf</th>
+                </tr>
+                <tr>
+                    <th data-sortable="true" data-sorter="numberSorter" data-visible="false"
+                        data-field="programid">programid</th>
+                    <th data-sortable="true" data-sorter="numberSorter"
+                        data-field="fid">fid</th>
+                    <th data-sortable="true" data-sorter="numberSorter"
+                        data-field="rb">rb</th>
+                    <th data-sortable="true" data-sorter="numberSorter"
+                        data-field="magpsf">magpsf</th>
+                    <th data-sortable="true" data-sorter="numberSorter"
+                        data-field="sigmapsf">sigmapsf</th>
+
+
                     <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="id">query id</th>
+                        data-field="ra">ra</th>
                     <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="query_created">date created, UTC</th>
+                        data-field="dec">dec</th>
+
+                    <th data-sortable="true" data-sorter="stringSorter"
+                        data-field="wd_name">name</th>
                     <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="query_last_modified">date last modified, UTC</th>
+                        data-field="wd_gaia_dr2_id">Gaia DR2 ID</th>
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="ra">ra</th>
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="dec">dec</th>
                     <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="query_expires">date expires, UTC</th>
+                        data-field="parallax">parallax</th>
                     <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="query_status">status</th>
-                    <th data-field="query_actions">actions</th>
+                        data-field="phot_g_mean_mag">phot_g_mean_mag</th>
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="l">l</th> data-visible="false"
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="b">b</th>
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="SDSS_name">SDSS_name</th>
+                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
+                        data-field="Teff">Teff</th>
+
                 </tr>
                 </thead>
                 <tbody id="table-tbody">
