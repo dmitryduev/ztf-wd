@@ -93,8 +93,8 @@
                    data-pagination="true"
                    data-side-pagination="client"
                    data-minimum-count-columns="2"
-                   data-page-size="25"
-                   data-page-list="[25, 50, 100, 200, 500, All]"
+                   data-page-size="20"
+                   data-page-list="[20, 50, 100, 200, 500, All]"
                    data-search="true"
                    data-detail-view="true"
                    data-detail-formatter="detailFormatter"
@@ -104,110 +104,6 @@
                    data-export-options='{ "fileName": "alerts-wd",
                                           "worksheetName": "alerts-wd1"
                                          }'>
-                <thead>
-                <tr>
-{#                    <th data-field="state" data-checkbox="true"></th>#}
-                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter"
-                        data-field="objectId">objectId</th>
-                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter"
-                        data-field="candid">candid</th>
-                    <th rowspan="2" data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="obs_date">date, UTC</th>
-
-                    <th colspan="5" data-field="candidate">candidate</th>
-                    <th colspan="2" data-field="cordinates">cordinates</th>
-                    <th colspan="10" data-field="wd">white dwarf</th>
-                </tr>
-                <tr>
-                    <th data-sortable="true" data-sorter="numberSorter" data-visible="false"
-                        data-field="programid">programid</th>
-                    <th data-sortable="true" data-sorter="numberSorter"
-                        data-field="fid">fid</th>
-                    <th data-sortable="true" data-sorter="numberSorter"
-                        data-field="rb">rb</th>
-                    <th data-sortable="true" data-sorter="numberSorter"
-                        data-field="magpsf">magpsf</th>
-                    <th data-sortable="true" data-sorter="numberSorter"
-                        data-field="sigmapsf">sigmapsf</th>
-
-
-                    <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="ra">ra</th>
-                    <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="dec">dec</th>
-
-                    <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="wd_name">name</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="wd_gaia_dr2_id">Gaia DR2 ID</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="ra">ra</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="dec">dec</th>
-                    <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="parallax">parallax</th>
-                    <th data-sortable="true" data-sorter="stringSorter"
-                        data-field="phot_g_mean_mag">phot_g_mean_mag</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="l">l</th> data-visible="false"
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="b">b</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="SDSS_name">SDSS_name</th>
-                    <th data-sortable="true" data-sorter="stringSorter" data-visible="false"
-                        data-field="Teff">Teff</th>
-
-                </tr>
-                </thead>
-                <tbody id="table-tbody">
-                {% for query in user_tasks %}
-                    {% set query_id = query['task_id'] %}
-                    <tr class="clickable-row" data-uniqueid="{{ query_id }}" id="{{ query_id }}">
-{#                        <td></td>#}
-                        <td>{{ query_id }}</td>
-                        {% for key in ('created', 'last_modified', 'expires')%}
-                            <td id="{{ query_id }}-{{ key }}">
-                                {{ query[key].strftime('%Y-%m-%d %H:%M:%S') }}
-                            </td>
-                        {% endfor %}
-                        <td id="{{ query_id }}-status">
-                            {% if query["status"] == "done" %}
-                                {% set query_status = 'success' %}
-                            {% endif %}
-                            {% if query["status"] == "failed" %}
-                                {% set query_status = 'danger' %}
-                            {% endif %}
-                            {% if query["status"] == "enqueued" %}
-                                {% set query_status = 'warning' %}
-                            {% endif %}
-                            <span class="badge badge-{{ query_status }}">{{ query["status"] }}</span>
-                        </td>
-                        <td id="{{ query_id }}-actions">
-                            {# remove if not enqueued #}
-                            {% if query["status"] != "enqueued" %}
-
-                                <a href="#" class="text-danger"
-                                   onclick="remove_query('{{ query_id }}')"
-                                   data-toggle="tooltip" data-placement="top" title="Remove query"><i class="fa fa-trash" aria-hidden="true"></i></a>
-                            {% endif %}
-                            {# download query #}
-                            |
-                            <a href="#" onclick="get_query('{{ query_id }}')"
-                               data-toggle="tooltip" data-placement="top" title="Get query"><i class="fa fa-tasks" aria-hidden="true"></i></a>
-                            <a href="#" onclick="get_query_view('{{ query_id }}')"
-                               data-toggle="tooltip" data-placement="top" title="View query in browser"><i class="fa fa-eye" aria-hidden="true"></i></a>
-                            {# download result #}
-                            {% if query["status"] in ["done", "failed"] %}
-                                |
-                                <a download="{{ query_id }}.result.json" href="/data/{{ user }}/{{ query_id }}.result.json"
-                                   data-toggle="tooltip" data-placement="top" title="Get result"><i class="fa fa-download" aria-hidden="true"></i></a>
-                                <a href="#" onclick="get_query_result_view('{{ query_id }}')"
-                                   data-toggle="tooltip" data-placement="top" title="View result in browser"><i class="fa fa-eye" aria-hidden="true"></i></a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
             </table>
 
 {#        <div class="row mb-2">#}
@@ -270,6 +166,226 @@
                 return Math.max(400, window_height - 210);
             }
         }
+
+
+        // build table using js
+        $('#table').bootstrapTable({
+            height: getHeight(),
+            columns: [
+                [
+                    {
+                        field: 'obs_date',
+                        title: 'date, UTC',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'objectId',
+                        title: 'objectId',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'candid',
+                        title: 'candid',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+
+                    {
+                        field: 'wd_name',
+                        title: 'name',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'wd_gaia_dr2_id',
+                        title: 'Gaia DR2 ID',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_ra',
+                        title: 'R.A.',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_dec',
+                        title: 'Decl.',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_parallax',
+                        title: 'Gaia parallax',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_phot_g_mean_mag',
+                        title: 'Gaia mag',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'wd_l',
+                        title: 'l',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_b',
+                        title: 'b',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_SDSS_name',
+                        title: 'SDSS_name',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'wd_Teff',
+                        title: 'Teff',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+
+                    {
+                        field: 'candidate',
+                        title: 'candidate',
+                        colspan: 7,
+                        align: 'center',
+                        valign: 'middle'
+                    }
+                ],
+
+                [
+                    {
+                        field: 'programid',
+                        title: 'programid',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true,
+                        visible: false
+                    },
+                    {
+                        field: 'fid',
+                        title: 'fid',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'rb',
+                        title: 'rb',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'magpsf',
+                        title: 'magpsf',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'sigmapsf',
+                        title: 'sigmapsf',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'ra',
+                        title: 'R.A.',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
+                        field: 'dec',
+                        title: 'Decl.',
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+
+                ]
+            ],
+            data: [
+                {% for alert in alerts %}
+                   {% set candid = alert['candid'] %}
+                   {% set objectId = alert['objectId'] %}
+                    {
+                        objectId: "{{objectId}}",
+                        candid: "{{candid}}",
+                        obs_date: "{{ alert['candidate']['jd'] }}",
+
+                        ra: "{{ alert['coordinates']['radec_str'][0] }}",
+                        dec: "{{ alert['coordinates']['radec_str'][1] }}",
+
+                        wd_name: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['White_dwarf_name']}}",
+                        wd_gaia_dr2_id: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['source_id']}}",
+                        wd_ra: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['coordinates']['radec_str'][0]}}",
+                        wd_dec: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['coordinates']['radec_str'][1]}}",
+                        wd_parallax: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['parallax']}}".slice(0, 4),
+                        wd_phot_g_mean_mag: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['phot_g_mean_mag']}}".slice(0, 8),
+                        wd_l: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['l']}}",
+                        wd_b: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['b']}}",
+                        wd_SDSS_name: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['SDSS_name']}}",
+                        wd_Teff: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['Teff']}}",
+
+
+                        programid: "{{alert['candidate']['programid']}}",
+                        fid: "{{alert['candidate']['fid']}}",
+                        rb: "{{alert['candidate']['rb']}}".slice(0, 4),
+                        magpsf: "{{alert['candidate']['magpsf']}}".slice(0, 5),
+                        sigmapsf: "{{alert['candidate']['sigmapsf']}}".slice(0, 4)
+                    },
+                {% endfor %}
+            ]
+        });
+
+
         // reset height of table with search results
         function resetTableHeight() {
             var $table = $('#table');
