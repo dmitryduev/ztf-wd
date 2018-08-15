@@ -83,6 +83,10 @@
             <div class="col-12">
                 {% for alert in alerts %}
                     {{  alert['_id'] }}<br>
+                    {% for cutout in ('science.jpg', 'template.jpg', 'difference.jpg') %}
+                        <img src="/data/{{alert['_id']}}/{{cutout}}" class="mr-1 mb-1">
+                    {% endfor %}
+                    <hr>
                 {% endfor %}
             </div>
         </div>
@@ -109,16 +113,6 @@
             </div>
         </div>
     </div>
-
-    {# propagate date ranges #}
-    {% if request.args.get('start') != None and request.args.get('end') != None %}
-    <script>
-        $(document).ready(function() {
-            $('#reportrange').data('daterangepicker').setStartDate(moment('{{ request.args.get('start') }}', 'YYYYMMDD'));
-            $('#reportrange').data('daterangepicker').setEndDate(moment('{{ request.args.get('end') }}', 'YYYYMMDD'));
-        });
-    </script>
-    {% endif %}
 
 {% endblock %}
 
@@ -150,4 +144,18 @@
             });
         }
     </script>
+
+    {# propagate date ranges #}
+    {% if request.args.get('start') != None and request.args.get('end') != None %}
+    <script>
+        $(document).ready(function() {
+            var start = moment('{{request.args.get('start')}}', 'YYYYMMDD');
+            var end = moment('{{request.args.get('end')}}', 'YYYYMMDD');
+
+            $('#reportrange').data('daterangepicker').setStartDate(start);
+            $('#reportrange').data('daterangepicker').setEndDate(end);
+            $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        });
+    </script>
+    {% endif %}
 {% endblock %}

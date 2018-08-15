@@ -331,14 +331,8 @@ def root():
     # messages = []
 
     # get time range:
-    if 'start' in flask.request.args:
-        date_start = flask.request.args['start']
-    else:
-        date_start = datetime.datetime.utcnow().strftime('%Y%m%d')
-    if 'end' in flask.request.args:
-        date_end = flask.request.args['end']
-    else:
-        date_end = datetime.datetime.utcnow().strftime('%Y%m%d')
+    date_start = flask.request.args.get('start', datetime.datetime.utcnow().strftime('%Y%m%d'), str)
+    date_end = flask.request.args.get('end', datetime.datetime.utcnow().strftime('%Y%m%d'), str)
 
     # print(date_start, date_end)
 
@@ -372,6 +366,7 @@ def root():
     return flask.Response(stream_template('template-root.html',
                                           user=user_id,
                                           logo=config['server']['logo'],
+                                          start=date_start, end=date_end,
                                           alerts=alerts))
 
 
