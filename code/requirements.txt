@@ -5,6 +5,7 @@ flask_login>=0.4.1
 flask_pymongo>=2.1.0
 gunicorn>=19.9.0
 matplotlib>=2.2.2
+pandas>=0.23.4
 pillow>=5.2.0
 pymongo>=3.6.1
 socketIO_client>=0.7.2

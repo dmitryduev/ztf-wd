@@ -393,14 +393,24 @@
         // display details
         function detailFormatter(index, row, element) {
             var html = [];
+
+            // cutouts
             var cutouts = ["science", "template", "difference"];
 
             cutouts.forEach(function (cutout) {
                 html.push("<figure class='figure m-1'>");
-                html.push("<img class='figure-img img-fluid' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg' class='mr-1 mb-1'>")
+                html.push("<img class='figure-img img-fluid' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg' class='mr-1 mb-1'>");
                 html.push("<figcaption class='figure-caption text-center'>" + cutout + "</figcaption>");
                 html.push("</figure>")
             });
+
+            // lightcurve
+            html.push("<figure class='figure ml-3 mt-1 mb-1 mr-1'>");
+            html.push("<img class='figure-img img-fluid' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/lightcurve.jpg' class='mr-1 mb-1'>");
+            html.push("<figcaption class='figure-caption text-center'>Light curve</figcaption>");
+            html.push("</figure>");
+
+            // TODO: download json
 
             return html.join('');
         }

@@ -12,6 +12,7 @@ from astropy.time import Time
 import json
 from penquins import Kowalski
 import numpy as np
+import pandas as pd
 # import unittest
 
 import matplotlib
@@ -61,6 +62,12 @@ def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i:i + n]
+
+
+def make_dataframe(packet):
+    df = pd.DataFrame(packet['candidate'], index=[0])  # the current alert
+    df_prv = pd.DataFrame(packet['prv_candidates'])  # obtaining all previous alerts at this location
+    return pd.concat([df, df_prv], ignore_index=True)  # we put the current alert and previous ones in the same table
 
 
 class WhiteDwarf(object):
@@ -428,6 +435,43 @@ class WhiteDwarf(object):
 
         return {}
 
+    def dump_lightcurve(self, alert, days_ago=True):
+        path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
+
+        if not os.path.exists(path_out):
+            os.makedirs(path_out)
+
+        dflc = make_dataframe(alert)
+
+        filter_color = {1: 'green', 2: 'red', 3: 'pink'}
+        if days_ago:
+            now = Time.now().jd
+            t = dflc.jd - now
+            xlabel = 'Days Ago'
+        else:
+            t = dflc.jd
+            xlabel = 'Time (JD)'
+
+        plt.close('all')
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for fid, color in filter_color.items():
+            # plot detections in this filter:
+            w = (dflc.fid == fid) & ~dflc.magpsf.isnull()
+            if np.sum(w):
+                ax.errorbar(t[w], dflc.loc[w, 'magpsf'], dflc.loc[w, 'sigmapsf'],
+                            fmt='.', color=color)
+            wnodet = (dflc.fid == fid) & dflc.magpsf.isnull()
+            if np.sum(wnodet):
+                ax.scatter(t[wnodet], dflc.loc[wnodet, 'diffmaglim'],
+                           marker='v', color=color, alpha=0.25)
+
+        plt.gca().invert_yaxis()
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('Magnitude')
+
+        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=50)
+
     def dump_cutout(self, alert, save_fits=False):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
 
@@ -555,6 +599,7 @@ class WhiteDwarf(object):
 
                         # generate previews for the endpoint
                         self.dump_cutout(alert, save_fits=False)
+                        self.dump_lightcurve(alert)
 
             # raise Exception('HALT!!')
 
