@@ -21,12 +21,16 @@ docker run -d --restart always --name ztf-wd-mongo -p 27018:27017 -v ztf-wd-mong
        mongo:latest
 ```
 
-Create file secrets.json with the Kowalski login credentials:
+Create file secrets.json with the Kowalski login credentials and admin user/password for the website:
 ```json
 {
   "kowalski": {
     "user": "USER",
     "password": "PASSWORD"
+  },
+  "database": {
+    "admin_username": "ADMIN",
+    "admin_password": "PASSWORD"
   }
 }
 ```
