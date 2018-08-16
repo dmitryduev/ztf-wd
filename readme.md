@@ -14,7 +14,7 @@ docker volume create ztf-wd-mongo-volume
 docker volume create ztf-wd-volume
 ```
 
-Launch the MongoDB container. Feel free to change u/p for the admin
+Launch the MongoDB container. Feel free to change u/p for the admin, but make sure to change config.json correspondingly.
 ```bash
 docker run -d --restart always --name ztf-wd-mongo -p 27018:27017 -v ztf-wd-mongo-volume:/data/db \
        -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=mongoadminsecret \

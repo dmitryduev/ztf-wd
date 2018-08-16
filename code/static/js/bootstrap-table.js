@@ -1691,7 +1691,7 @@
       }
 
       if (!this.options.cardView && this.options.detailView) {
-        html.push('<td>')
+        html.push('<td class="text-center">')
 
         if (Utils.calculateObjectValue(null, this.options.detailFilter, [i, item])) {
           html.push(`

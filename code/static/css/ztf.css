@@ -153,3 +153,8 @@ margin-bottom: var(--vertical-spacing);}*/
     /*padding-bottom: 0.2em;*/
     font-size: 0.85em;
 }
+
+.th-inner {
+    padding: 0px 8px 0px 8px !important;
+    line-height: 24px !important;;
+}

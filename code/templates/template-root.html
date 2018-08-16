@@ -21,58 +21,7 @@
                 <h3>White dwarfs detected with ZTF</h3>
             </div>
             <div class="col-md-4">
-                <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-                <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
-                <div id="reportrange" class="text-right w-100"
-                     style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;">
-                    <i class="far fa-calendar-alt"></i>&nbsp;
-                    <span></span> <i class="fas fa-caret-down"></i>
-                </div>
-
-                <script type="text/javascript">
-                $(function() {
-
-                    {#var start = moment().utc().subtract(1, 'days').startOf('day');#}
-                    var start = moment().utc().startOf('day');
-                    var end = moment().utc();
-
-                    function cb(start, end) {
-                        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-                    }
-
-                    $('#reportrange').daterangepicker({
-                        startDate: start,
-                        endDate: end,
-                        minDate: moment('20170901', 'YYYYMMDD'),
-                        maxDate: end,
-                        opens: "left",
-                        ranges: {
-                           'Today': [moment().utc().startOf('day'), moment().utc().add(1, 'days').startOf('day')],
-                           'Yesterday': [moment().utc().subtract(1, 'days').startOf('day'),
-                                         moment().utc().startOf('day')],
-                           'Last 7 Days': [moment().utc().subtract(6, 'days').startOf('day'),
-                                           moment().utc().add(1, 'days').startOf('day')],
-                           'Last 30 Days': [moment().utc().subtract(29, 'days').startOf('day'),
-                                            moment().utc().add(1, 'days').startOf('day')],
-                           'This Month': [moment().utc().startOf('month'),
-                                          moment().utc().endOf('month')],
-                           'Last Month': [moment().utc().subtract(1, 'month').startOf('month'),
-                                          moment().utc().subtract(1, 'month').endOf('month')],
-                           'Everything': [moment('20170901', 'YYYYMMDD'), moment().utc()]
-                        }
-                    }, cb);
-
-                    cb(start, end);
-
-                    $('#reportrange').on('apply.daterangepicker', function(ev, picker) {
-                        var start = picker.startDate.format('YYYYMMDD');
-                        var end = picker.endDate.format('YYYYMMDD');
-                        window.location.href = "?start=" + start + "&end=" + end;
-                    });
-
-                });
-                </script>
             </div>
         </div>
         <div class="row">
@@ -81,42 +30,82 @@
         </div>
 
         <div id="toolbar" class="btn-group">
-                <button type="button" class="btn btn-outline-dark"
-                        style="cursor: pointer;" onclick="toggle_expansion()">
-                    <i id="expansion_toggle" class="fas fa-plus" aria-hidden="true"></i>
-                </button>
-            </div>
-            <table id="table"
-                   class="table table-hover table-condensed"
-                   data-toggle="table"
-                   data-toolbar="#toolbar"
-                   data-pagination="true"
-                   data-side-pagination="client"
-                   data-minimum-count-columns="2"
-                   data-page-size="20"
-                   data-page-list="[20, 50, 100, 200, 500, All]"
-                   data-search="true"
-                   data-detail-view="true"
-                   data-detail-formatter="detailFormatter"
-                   data-show-columns="true"
-                   data-show-export="true"
-                   data-export-types="['json', 'csv']"
-                   data-export-options='{ "fileName": "alerts-wd",
-                                          "worksheetName": "alerts-wd1"
-                                         }'>
-            </table>
+            <button type="button" class="btn btn-outline-dark"
+                    style="cursor: pointer;" onclick="toggle_expansion()">
+                <i id="expansion_toggle" class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+            <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+            <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
-{#        <div class="row mb-2">#}
-{#            <div class="col-12">#}
-{#                {% for alert in alerts %}#}
-{#                    {{  alert['_id'] }}<br>#}
-{#                    {% for cutout in ('science.jpg', 'template.jpg', 'difference.jpg') %}#}
-{#                        <img src="/data/{{alert['_id']}}/{{cutout}}" class="mr-1 mb-1">#}
-{#                    {% endfor %}#}
-{#                    <hr>#}
-{#                {% endfor %}#}
-{#            </div>#}
-{#        </div>#}
+            <div id="reportrange" class="text-right w-100"
+                 style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;">
+                <i class="far fa-calendar-alt"></i>&nbsp;
+                <span></span> <i class="fas fa-caret-down"></i>
+            </div>
+
+            <script type="text/javascript">
+            $(function() {
+
+                {#var start = moment().utc().subtract(1, 'days').startOf('day');#}
+                var start = moment().utc().startOf('day');
+                var end = moment().utc();
+
+                function cb(start, end) {
+                    $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+                }
+
+                $('#reportrange').daterangepicker({
+                    startDate: start,
+                    endDate: end,
+                    minDate: moment('20170901', 'YYYYMMDD'),
+                    maxDate: end,
+                    opens: "left",
+                    ranges: {
+                       'Today': [moment().utc().startOf('day'), moment().utc().add(1, 'days').startOf('day')],
+                       'Yesterday': [moment().utc().subtract(1, 'days').startOf('day'),
+                                     moment().utc().startOf('day')],
+                       'Last 7 Days': [moment().utc().subtract(6, 'days').startOf('day'),
+                                       moment().utc().add(1, 'days').startOf('day')],
+                       'Last 30 Days': [moment().utc().subtract(29, 'days').startOf('day'),
+                                        moment().utc().add(1, 'days').startOf('day')],
+                       'This Month': [moment().utc().startOf('month'),
+                                      moment().utc().endOf('month')],
+                       'Last Month': [moment().utc().subtract(1, 'month').startOf('month'),
+                                      moment().utc().subtract(1, 'month').endOf('month')],
+                       'Everything': [moment('20170901', 'YYYYMMDD'), moment().utc()]
+                    }
+                }, cb);
+
+                cb(start, end);
+
+                $('#reportrange').on('apply.daterangepicker', function(ev, picker) {
+                    var start = picker.startDate.format('YYYYMMDD');
+                    var end = picker.endDate.format('YYYYMMDD');
+                    window.location.href = "?start=" + start + "&end=" + end;
+                });
+
+            });
+            </script>
+        </div>
+        <table id="table"
+               class="table table-hover table-condensed"
+               data-toggle="table"
+               data-toolbar="#toolbar"
+               data-pagination="true"
+               data-side-pagination="client"
+               data-minimum-count-columns="2"
+               data-page-size="20"
+               data-page-list="[20, 50, 100, 200, 500, All]"
+               data-search="true"
+               data-detail-view="true"
+               data-detail-formatter="detailFormatter"
+               data-show-columns="true"
+               data-show-export="true"
+               data-export-types="['json', 'csv']"
+               data-export-options='{ "fileName": "alerts-wd",
+                                      "worksheetName": "alerts-wd1"
+                                     }'>
+        </table>
     </div>
 
     <!-- Modal -->
@@ -363,7 +352,7 @@
                         objectId: "{{objectId}}",
                         candid: "{{candid}}",
 
-                        obs_date: moment(jd.julian({{ alert['candidate']['jd'] }}).getDate()).format('YYYY/MM/DD_HH:mm:ss'),
+                        obs_date: moment(jd.julian({{ alert['candidate']['jd'] }}).getDate()).utc().format('YYYY/MM/DD_HH:mm:ss') + "__{{ alert['candidate']['jd'] }}",
 
                         ra: "{{ alert['coordinates']['radec_str'][0] }}",
                         dec: "{{ alert['coordinates']['radec_str'][1] }}",
@@ -398,14 +387,14 @@
             var cutouts = ["science", "template", "difference"];
 
             cutouts.forEach(function (cutout) {
-                html.push("<figure class='figure m-1'>");
+                html.push("<figure class='figure m-1 align-top'>");
                 html.push("<img class='figure-img img-fluid mr-1 mb-1' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg'>");
                 html.push("<figcaption class='figure-caption text-center'>" + cutout + "</figcaption>");
                 html.push("</figure>")
             });
 
             // lightcurve
-            html.push("<figure class='figure ml-3 mt-1 mb-1 mr-1'>");
+            html.push("<figure class='figure ml-3 mt-1 mb-1 mr-1 align-top'>");
             html.push("<img class='figure-img img-fluid mr-1' style='width: 350px' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/lightcurve.jpg'>");
             html.push("<figcaption class='figure-caption text-center'>Light curve</figcaption>");
             html.push("</figure>");

@@ -470,7 +470,7 @@ class WhiteDwarf(object):
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Magnitude')
 
-        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=200)
+        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), bbox_inches="tight", pad_inches=0, dpi=200)
 
     def dump_cutout(self, alert, save_fits=False):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
@@ -579,7 +579,7 @@ class WhiteDwarf(object):
             self.logger.debug(list(matches.keys()))
 
             total_detected += len(matches)
-            self.logger.info(f'total detected so far: {total_detected}')
+            self.logger.info(f'total # of white dwarfs detected so far: {total_detected}')
 
             if len(matches) > 0:
                 # get full WD info for matched objects:
@@ -609,7 +609,7 @@ class WhiteDwarf(object):
             self.insert_multiple_db_entries(_collection=self.config['database']['collection_obs'],
                                             _db_entries=matches_to_ingest)
 
-        self.logger.info(f'total detected: {total_detected}')
+        self.logger.info(f'total # of white dwarfs detected: {total_detected}')
 
         self.logger.info('Creating 2d index')
         self.db['db'][self.config['database']['collection_obs']].create_index([('coordinates.radec_geojson',
