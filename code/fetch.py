@@ -470,7 +470,7 @@ class WhiteDwarf(object):
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Magnitude')
 
-        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=150)
+        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=200)
 
     def dump_cutout(self, alert, save_fits=False):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
