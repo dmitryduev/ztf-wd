@@ -104,6 +104,7 @@
                data-detail-view="true"
                data-detail-formatter="detailFormatter"
                data-show-columns="true"
+               data-show-multi-sort="true"
                data-show-export="true"
                data-export-types="['json', 'csv']"
                data-export-options='{ "fileName": "alerts-wd",
@@ -143,6 +144,7 @@
     <script src="{{-script_root-}}/static/js/tableExport.js"></script>
     <script src="{{-script_root-}}/static/js/bootstrap-table-export.js"></script>
     <script src="{{-script_root-}}/static/js/FileSaver.min.js"></script>
+    <script src="{{-script_root-}}/static/js/bootstrap-table-multiple-sort.js"></script>
 
     <!-- Big int support for js -->
     <script src="{{-script_root-}}/static/js/json-bigint.js"></script>
@@ -180,7 +182,7 @@
                         align: 'center',
                         valign: 'middle',
                         sortable: true,
-                        visible: false
+                        visible: true
                     },
                     {
                         field: 'objectId',

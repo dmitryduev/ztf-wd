@@ -8,7 +8,7 @@
   // TOOLS DEFINITION
   // ======================
 
-  let bootstrapVersion = 3
+  let bootstrapVersion = 4
   try {
     var rawVersion = $.fn.dropdown.Constructor.VERSION
 
@@ -45,7 +45,7 @@
       }
     },
     4: {
-      iconsPrefix: 'fa',
+      iconsPrefix: 'fas',
       icons: {
         paginationSwitchDown: 'fa-toggle-down',
         paginationSwitchUp: 'fa-toggle-up',
