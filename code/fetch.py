@@ -523,8 +523,10 @@ class WhiteDwarf(object):
                 try:
                     tmp.seek(0)
                     Image.open(tmp).save(os.path.join(path_out, f'{tag}.jpg'))
-                finally:
-                    self.logger.error(f'Failed to save stamp: {alert[_id]} {tag}')
+                except Exception as _e:
+                    traceback.print_exc()
+                    self.logger.error(str(_e))
+                    self.logger.error(f'Failed to save stamp: {alert["_id"]} {tag}')
 
     def get_ps1_image(self, alert):
         """
