@@ -67,7 +67,7 @@
                     ranges: {
                        'Today': [moment().utc().startOf('day'), moment().utc().add(1, 'days').startOf('day')],
                        'Yesterday': [moment().utc().subtract(1, 'days').startOf('day'),
-                                     moment().utc().startOf('day')],
+                                     moment().utc().subtract(1, 'days').startOf('day')],
                        'Last 7 Days': [moment().utc().subtract(6, 'days').startOf('day'),
                                        moment().utc().add(1, 'days').startOf('day')],
                        'Last 30 Days': [moment().utc().subtract(29, 'days').startOf('day'),
@@ -76,7 +76,7 @@
                                       moment().utc().endOf('month')],
                        'Last Month': [moment().utc().subtract(1, 'month').startOf('month'),
                                       moment().utc().subtract(1, 'month').endOf('month')],
-                       'Everything': [moment('20170901', 'YYYYMMDD'), moment().utc()]
+                       'Everything': [moment('20170901', 'YYYYMMDD'), moment().utc().add(1, 'days').startOf('day')]
                     }
                 }, cb);
 
@@ -359,7 +359,8 @@
                         objectId: "{{objectId}}",
                         candid: "{{candid}}",
 
-                        obs_date: moment(jd.julian({{ alert['candidate']['jd'] }}).getDate()).utc().format('YYYY/MM/DD_HH:mm:ss') + "__{{ alert['candidate']['jd'] }}",
+                        obs_date: moment(jd.julian({{ alert['candidate']['jd'] }}).getDate()).utc().format('YYYY/MM/DD_HH:mm:ss'),
+                        {#obs_date: moment(jd.julian({{ alert['candidate']['jd'] }}).getDate()).utc().format('YYYY/MM/DD_HH:mm:ss') + "__{{ alert['candidate']['jd'] }}",#}
 
                         ra: "{{ alert['coordinates']['radec_str'][0] }}",
                         dec: "{{ alert['coordinates']['radec_str'][1] }}",

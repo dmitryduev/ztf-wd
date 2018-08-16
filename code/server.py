@@ -346,7 +346,7 @@ def root():
         dt_end = datetime.datetime.strptime(date_end, '%Y%m%d') + datetime.timedelta(days=1)
         jd_end = Time(dt_end).jd
 
-    print(jd_start, jd_end)
+    # print(jd_start, jd_end)
 
     # get white dwarfs detected in jd time range
     if user_id is None:
