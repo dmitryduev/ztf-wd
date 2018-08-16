@@ -461,7 +461,7 @@ class WhiteDwarf(object):
             if np.sum(w):
                 ax.errorbar(t[w], dflc.loc[w, 'magpsf'], dflc.loc[w, 'sigmapsf'],
                             fmt='.', color=color)
-            wnodet = (dflc.fid == fid) & dflc.magpsf.isnull()
+            wnodet = (dflc.fid == fid) & dflc.magpsf.isnull() & (dflc.diffmaglim > 0)
             if np.sum(wnodet):
                 ax.scatter(t[wnodet], dflc.loc[wnodet, 'diffmaglim'],
                            marker='v', color=color, alpha=0.25)
@@ -470,7 +470,7 @@ class WhiteDwarf(object):
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Magnitude')
 
-        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=50)
+        plt.savefig(os.path.join(path_out, 'lightcurve.jpg'), dpi=150)
 
     def dump_cutout(self, alert, save_fits=False):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
