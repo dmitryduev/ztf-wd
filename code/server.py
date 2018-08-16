@@ -28,6 +28,7 @@ def add_admin():
     if ex_admin is None:
         mongo.db.users.insert_one({'_id': secrets['database']['admin_username'],
                                    'password': generate_password_hash(secrets['database']['admin_password']),
+                                   'permissions': {},
                                    'last_modified': utc_now()
                                    })
 

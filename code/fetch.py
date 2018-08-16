@@ -395,7 +395,7 @@ class WhiteDwarf(object):
                 #                               "Gaia_DR2_WD": {"filter": {},
                 #                                               "projection": {"_id": 1, "coordinates": 0}}
                 # print(q)
-                r = self.kowalski.query(query=q, timeout=20)
+                r = self.kowalski.query(query=q, timeout=300)
                 # print(r)
 
                 matches = r['result']['ZTF_alerts']
@@ -420,7 +420,7 @@ class WhiteDwarf(object):
                      "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
                      }
                 # print(q)
-                r = self.kowalski.query(query=q, timeout=10)
+                r = self.kowalski.query(query=q, timeout=300)
                 # print(r)
                 result = r['result']['query_result']
 
