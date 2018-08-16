@@ -154,8 +154,8 @@
         // Fancy table stuff
         function getHeight() {
             var window_height = $(window).height();
-            console.log(window_height);
-            console.log(document.getElementById('table').getBoundingClientRect().top);
+            {#console.log(window_height);#}
+            {#console.log(document.getElementById('table').getBoundingClientRect().top);#}
             if (window_height > 1200) {
                 var top = document.getElementById('table').getBoundingClientRect().top;
                 return Math.max(450, window_height - top - 20);
