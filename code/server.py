@@ -104,7 +104,7 @@ def login():
         Endpoint for login through the web interface
     :return:
     """
-    print(flask_login.current_user)
+    # print(flask_login.current_user)
     if flask.request.method == 'GET':
         # logged in already?
         if flask_login.current_user.is_authenticated:
