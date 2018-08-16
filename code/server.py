@@ -343,7 +343,7 @@ def root():
         dt_end = dt_start + datetime.timedelta(days=1)
         jd_end = Time(dt_end).jd
     else:
-        dt_end = datetime.datetime.strptime(date_end, '%Y%m%d')
+        dt_end = datetime.datetime.strptime(date_end, '%Y%m%d') + datetime.timedelta(days=1)
         jd_end = Time(dt_end).jd
 
     print(jd_start, jd_end)
