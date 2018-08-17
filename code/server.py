@@ -452,7 +452,7 @@ def alerts(candid):
         flask.abort(404)
 
 
-@app.route('/search', methods=['GET'])
+@app.route('/search', methods=['GET', 'POST'])
 def search():
     """
         Endpoint for the web GUI search page
