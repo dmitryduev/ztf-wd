@@ -523,16 +523,19 @@ def search():
             # print(objects)
             # print(cone_search_radius)
 
-            query['filter']['$or'] = []
+            # get only programid=1 data for anonymous users:
+            query['filter']['$and'] = [{'candidate.programid': {'$eq': 1}}] if user_id is None else []
+
+            query['filter']['$and'].append({'$or': []})
 
             for oi, obj_crd in enumerate(object_coordinates):
                 # convert ra/dec into GeoJSON-friendly format
                 # print(obj_crd)
                 _ra, _dec = radec_str2geojson(*obj_crd)
 
-                query['filter']['$or'].append({'coordinates.radec_geojson':
-                                                   {'$geoWithin': {'$centerSphere': [[_ra, _dec],
-                                                                                     cone_search_radius]}}})
+                query['filter']['$and'][-1]['$or'].append({'coordinates.radec_geojson':
+                                                           {'$geoWithin': {'$centerSphere': [[_ra, _dec],
+                                                                                             cone_search_radius]}}})
 
             # query own API:
             r = requests.post(os.path.join('http://', f"localhost:{config['server']['port']}", 'alerts'),
