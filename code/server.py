@@ -464,7 +464,8 @@ def get_alerts():
     # print(query)
 
     # prevent fraud:
-    query['filter'] = {'$and': [{'candidate.programid': 1}, query['filter']]}
+    if user_id is None:
+        query['filter'] = {'$and': [{'candidate.programid': 1}, query['filter']]}
 
     if len(query['projection']) == 0:
         cursor = mongo.db.ZTF_alerts.find(query['filter'])  # .limit(2)
