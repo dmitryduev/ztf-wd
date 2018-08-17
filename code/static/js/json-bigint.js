@@ -2829,7 +2829,7 @@ var json_parse = function (options) {
 // Default options one can override by passing options to the parse()
     var _options = {
         "strict": false,  // not being strict means do not generate syntax errors for "duplicate key"
-        "storeAsString": false // toggles whether the values should be stored as BigNumber (default) or a string
+        "storeAsString": true // toggles whether the values should be stored as BigNumber (default) or a string
     };
 
 

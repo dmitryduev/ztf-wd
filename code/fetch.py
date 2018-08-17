@@ -613,9 +613,13 @@ class WhiteDwarf(object):
 
         self.logger.info(f'total # of white dwarfs detected: {total_detected}')
 
-        self.logger.info('Creating 2d index')
+        self.logger.info('Creating indices')
         self.db['db'][self.config['database']['collection_obs']].create_index([('coordinates.radec_geojson',
-                                                                                '2dsphere')])
+                                                                                '2dsphere')], background=True)
+        self.db['db'][self.config['database']['collection_obs']].create_index([('objectId', pymongo.ASCENDING)],
+                                                                              background=True)
+        self.db['db'][self.config['database']['collection_obs']].create_index([('candid', pymongo.ASCENDING)],
+                                                                              background=True)
 
         self.logger.info('All done')
 

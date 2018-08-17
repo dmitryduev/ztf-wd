@@ -393,23 +393,41 @@
         function detailFormatter(index, row, element) {
             var html = [];
 
+            html.push("<div class=\"row p-0 m-0\">");
+
             // cutouts
             var cutouts = ["science", "template", "difference"];
 
             cutouts.forEach(function (cutout) {
+                html.push("<div class=\"col p-0 m-0\">");
                 html.push("<figure class='figure m-1 align-top'>");
-                html.push("<img class='figure-img img-fluid mr-1 mb-1' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg'>");
+                html.push("<img class='figure-img img-fluid mb-1' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg'>");
                 html.push("<figcaption class='figure-caption text-center'>" + cutout + "</figcaption>");
-                html.push("</figure>")
+                html.push("</figure>");
+                html.push("</div>");
             });
 
             // lightcurve
-            html.push("<figure class='figure ml-3 mt-1 mb-1 mr-1 align-top'>");
-            html.push("<img class='figure-img img-fluid mr-1' style='width: 300px' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/lightcurve.jpg'>");
+            html.push("<div class=\"col-4 p-0 m-0\">");
+            html.push("<figure class='figure ml-3 mt-1 mb-1 align-top'>");
+            html.push("<img class='figure-img img-fluid mr-1' style='width: 295px' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/lightcurve.jpg'>");
             html.push("<figcaption class='figure-caption text-center'>Light curve</figcaption>");
             html.push("</figure>");
+            html.push("</div>");
 
-            // TODO: download json
+            // Buttons:
+            html.push("<div class=\"col-1 p-0 m-0\">");
+            html.push("<a role='button' download='" + row['candid'] + ".json' href='/alerts/" + row['candid'] +
+                "?download=json'" +
+                " class='btn btn-sm btn-outline-dark mt-1 ml-1 mb-1 align-top'>JSON <i class='fas fa-download'></i></a>");
+            // alert page:
+            html.push("<br>");
+            html.push("<a target='_blank' role='button' " + "href='/alerts/" + row['candid'] +
+                "' class='btn btn-sm btn-outline-dark mt-1 ml-1 mb-1 align-top'>Details <i class='fas fa-external-link-alt'></i></a>");
+            html.push("</div>");
+
+            // close row
+            html.push("</div>");
 
             return html.join('');
         }

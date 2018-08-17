@@ -17,6 +17,10 @@ from utils import utc_now, jd, get_config
 # from .utils import utc_now, jd, get_config
 
 
+def to_pretty_json(value):
+    return dumps(value, indent=4)  # , separators=(',', ': ')
+
+
 def add_admin():
     """
         Create admin user for the web interface if it does not exists already
@@ -44,6 +48,9 @@ with open('/app/secrets.json') as sjson:
 app = flask.Flask(__name__)
 # add 'do' statement to jinja environment (does the same as {{ }}, but returns nothing):
 app.jinja_env.add_extension('jinja2.ext.do')
+
+# add json prettyfier
+app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
 # set up secret key:
 app.secret_key = config['server']['SECRET_KEY']
@@ -395,6 +402,53 @@ def data_static(filename):
     """
     _p, _f = os.path.split(filename)
     return flask.send_from_directory(os.path.join(config['path']['path_alerts'], _p), _f)
+
+
+# alerts REST
+@app.route('/alerts/<candid>', methods=['GET'])
+def alerts(candid):
+    try:
+        user_id = str(flask_login.current_user.id)
+    except Exception as e:
+        print(e)
+        user_id = None
+
+    download = flask.request.args.get('download', None, str)
+    # print(download)
+
+    # print(candid)
+
+    alert = mongo.db.ZTF_alerts.find_one({'candid': int(candid)})
+    # print(alert)
+
+    if alert is not None and len(alert) != 0:
+        if alert['candidate']['programid'] != 1:
+            try:
+                if flask_login.current_user.id == 'admin':
+                    if download is not None:
+                        return flask.Response(dumps(alert), mimetype='application/json')
+                    else:
+                        return flask.render_template('template-alert.html',
+                                                     user=user_id,
+                                                     alert=alert,
+                                                     logo=config['server']['logo'])
+                else:
+                    flask.abort(403)
+            except Exception as e:
+                # for now, only _admin_ can access non-MSIP data
+                print(e)
+                flask.abort(403)
+        else:
+            if download is not None:
+                return flask.Response(dumps(alert), mimetype='application/json')
+            else:
+                return flask.render_template('template-alert.html',
+                                             user=user_id,
+                                             alert=alert,
+                                             logo=config['server']['logo'])
+    else:
+        # couldn't find it
+        flask.abort(404)
 
 
 if __name__ == '__main__':
