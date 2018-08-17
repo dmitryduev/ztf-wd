@@ -18,7 +18,8 @@ from utils import utc_now, jd, get_config
 
 
 def to_pretty_json(value):
-    return dumps(value, indent=4)  # , separators=(',', ': ')
+    # return dumps(value, indent=4)  # , separators=(',', ': ')
+    return dumps(value, separators=(',', ': '))
 
 
 def add_admin():
