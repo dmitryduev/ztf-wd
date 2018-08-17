@@ -455,8 +455,16 @@ def alerts(candid):
 
 @app.route('/alerts', methods=['POST'])
 def get_alerts():
+    if flask_login.current_user.is_anonymous:
+        user_id = None
+    else:
+        user_id = str(flask_login.current_user.id)
+
     query = flask.request.json
     # print(query)
+
+    # prevent fraud:
+    query['filter'] = {'$and': [{'candidate.programid': 1}, query['filter']]}
 
     if len(query['projection']) == 0:
         cursor = mongo.db.ZTF_alerts.find(query['filter'])  # .limit(2)
