@@ -452,5 +452,60 @@ def alerts(candid):
         flask.abort(404)
 
 
+@app.route('/search', methods=['GET'])
+def search():
+    """
+        Endpoint for the web GUI search page
+    :return:
+    """
+    if flask_login.current_user.is_anonymous():
+        user_id = None
+    else:
+        user_id = str(flask_login.current_user.id)
+
+    print(user_id)
+
+    # messages = []
+
+    # get time range:
+    date_start = flask.request.args.get('start', datetime.datetime.utcnow().strftime('%Y%m%d'), str)
+    date_end = flask.request.args.get('end', datetime.datetime.utcnow().strftime('%Y%m%d'), str)
+
+    # print(date_start, date_end)
+
+    # compute jd range:
+    dt_start = datetime.datetime.strptime(date_start, '%Y%m%d')
+    jd_start = Time(dt_start).jd
+    if date_end == date_start:
+        dt_end = dt_start + datetime.timedelta(days=1)
+        jd_end = Time(dt_end).jd
+    else:
+        dt_end = datetime.datetime.strptime(date_end, '%Y%m%d') + datetime.timedelta(days=1)
+        jd_end = Time(dt_end).jd
+
+    # print(jd_start, jd_end)
+
+    # get white dwarfs detected in jd time range
+    if user_id is None:
+        # Anonymous only gets MSIP data
+        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end},
+                                           'candidate.programid': {'$eq': 1}},
+                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+    else:
+        # Shri gets it all
+        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end}},
+                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+
+    alerts = list(cursor) if cursor is not None else []
+
+    # TODO: yield from pymongo cursor instead of converting to list all at once
+
+    return flask.Response(stream_template('template-root.html',
+                                          user=user_id,
+                                          logo=config['server']['logo'],
+                                          start=date_start, end=date_end,
+                                          alerts=alerts))
+
+
 if __name__ == '__main__':
     app.run(host=config['server']['host'], port=config['server']['port'], threaded=True)
