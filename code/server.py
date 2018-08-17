@@ -551,6 +551,9 @@ def search():
                               json=query)
             _alerts = r.json()
 
+            if len(_alerts) == 0:
+                messages = [(u'Did not find anything.', u'info')]
+
         except Exception as e:
             print(e)
             messages = [(u'Failed to digest query.', u'danger')]
