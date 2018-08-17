@@ -1,2 +1,2 @@
-5 20 * * * root /usr/local/bin/python /app/fetch.py /app/config.json >> /var/log/cron.log 2>&1
+5 20 * * * /usr/local/bin/python /app/fetch.py /app/config.json >> /var/log/cron.log 2>&1
 # An empty line is required at the end of this file for a valid cron file.
