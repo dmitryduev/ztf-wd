@@ -11,9 +11,11 @@ import datetime
 import pytz
 import logging
 from ast import literal_eval
+import requests
+import numpy as np
 
 
-from utils import utc_now, jd, get_config
+from utils import utc_now, jd, get_config, radec_str2geojson
 # from .utils import utc_now, jd, get_config
 
 
@@ -330,12 +332,10 @@ def root():
         Endpoint for the web GUI homepage
     :return:
     """
-    # return flask.render_template('template.html')
-    try:
-        user_id = str(flask_login.current_user.id)
-    except Exception as e:
-        print(e)
+    if flask_login.current_user.is_anonymous:
         user_id = None
+    else:
+        user_id = str(flask_login.current_user.id)
 
     # messages = []
 
@@ -419,6 +419,7 @@ def alerts(candid):
 
     # print(candid)
 
+    # bypass /alerts API and get it this way (it's faster)
     alert = mongo.db.ZTF_alerts.find_one({'candid': int(candid)})
     # print(alert)
 
@@ -452,6 +453,21 @@ def alerts(candid):
         flask.abort(404)
 
 
+@app.route('/alerts', methods=['POST'])
+def get_alerts():
+    query = flask.request.json
+    # print(query)
+
+    if len(query['projection']) == 0:
+        cursor = mongo.db.ZTF_alerts.find(query['filter'])  # .limit(2)
+    else:
+        cursor = mongo.db.ZTF_alerts.find(query['filter'], query['projection'])  # .limit(2)
+
+    _alerts = list(cursor) if cursor is not None else []
+
+    return flask.Response(dumps(_alerts), mimetype='application/json')
+
+
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     """
@@ -463,21 +479,76 @@ def search():
     else:
         user_id = str(flask_login.current_user.id)
 
-    print(user_id)
+    # print(user_id)
 
-    # messages = []
+    messages = []
 
     # alerts = list(cursor) if cursor is not None else []
-    # alerts = []
-    alerts = [mongo.db.ZTF_alerts.find_one()]
+    _alerts = []
 
-    # TODO: yield from pymongo cursor instead of converting to list all at once
+    # got a request?
+    if flask.request.method == 'POST':
+        try:
+            form = flask.request.form
+            print(form)
+
+            # convert to filter and projection to run a find() query with the API:
+            query = {'filter': {},
+                     'projection': {}}
+
+            objects = literal_eval(form['radec'].strip())
+
+            if isinstance(objects, list):
+                object_coordinates = objects
+                object_names = [str(obj_crd) for obj_crd in object_coordinates]
+            elif isinstance(objects, dict):
+                object_names, object_coordinates = zip(*objects.items())
+                object_names = list(map(str, object_names))
+            else:
+                raise ValueError('Unsupported type of object coordinates')
+
+            cone_search_radius = float(form['cone_search_radius'])
+            # convert to rad:
+            if form['cone_search_unit'] == 'arcsec':
+                cone_search_radius *= np.pi / 180.0 / 3600.
+            elif form['cone_search_unit'] == 'arcmin':
+                cone_search_radius *= np.pi / 180.0 / 60.
+            elif form['cone_search_unit'] == 'deg':
+                cone_search_radius *= np.pi / 180.0
+            elif form['cone_search_unit'] == 'rad':
+                cone_search_radius *= 1
+            else:
+                raise Exception('Unknown cone search unit. Must be in [deg, rad, arcsec, arcmin]')
+
+            # print(objects)
+            # print(cone_search_radius)
+
+            query['filter']['$or'] = []
+
+            for oi, obj_crd in enumerate(object_coordinates):
+                # convert ra/dec into GeoJSON-friendly format
+                # print(obj_crd)
+                _ra, _dec = radec_str2geojson(*obj_crd)
+
+                query['filter']['$or'].append({'coordinates.radec_geojson':
+                                                   {'$geoWithin': {'$centerSphere': [[_ra, _dec],
+                                                                                     cone_search_radius]}}})
+
+            # query own API:
+            r = requests.post(os.path.join('http://', f"localhost:{config['server']['port']}", 'alerts'),
+                              json=query)
+            _alerts = r.json()
+
+        except Exception as e:
+            print(e)
+            messages = [(u'Failed to digest query.', u'danger')]
 
     return flask.Response(stream_template('template-search.html',
                                           user=user_id,
                                           logo=config['server']['logo'],
                                           form=flask.request.form,
-                                          alerts=alerts))
+                                          alerts=_alerts,
+                                          messages=messages))
 
 
 if __name__ == '__main__':

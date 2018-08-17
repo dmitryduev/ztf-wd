@@ -25,7 +25,7 @@
                 </div>
                 <div id="coordinatesTab" class="collapse show" role="tabpanel" aria-labelledby="headingCoordinatesTab">
                     <div class="card-body">
-                        <form id="objects_form" class="form">
+                        <form id="objects_form" class="form" method="post">
 
                             <div class="form-group row">
                                 <label for="ra" class="col-md-2 col-form-label">RA/Dec, ICRS</label>
@@ -64,29 +64,30 @@ Examples:
 
                             </div>
 
-                            <div class="form-group row">
-                                <label for="filter" class="col-md-2 control-label">
-                                    Filter
-                                </label>
+                            {# TODO #}
+{#                            <div class="form-group row">#}
+{#                                <label for="filter" class="col-md-2 control-label">#}
+{#                                    Filter#}
+{#                                </label>#}
+{##}
+{#                                <div class="col-md-10">#}
+{#                                    <input type="text" class="form-control form-control-sm object_coordinates" id="filter"#}
+{#                                           name="filter" placeholder="MongoDB syntax, see help">#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="form-group row">#}
+{#                                <label for="projection" class="col-md-2 control-label">#}
+{#                                    Projection#}
+{#                                </label>#}
+{##}
+{#                                <div class="col-md-10">#}
+{#                                    <input type="text" class="form-control form-control-sm object_coordinates" id="projection"#}
+{#                                           name="projection" placeholder="MongoDB syntax, see help">#}
+{#                                </div>#}
+{#                            </div>#}
 
-                                <div class="col-md-10">
-                                    <input type="text" class="form-control form-control-sm object_coordinates" id="filter"
-                                           name="filter" placeholder="MongoDB syntax, see help">
-                                </div>
-                            </div>
-
-                            <div class="form-group row">
-                                <label for="projection" class="col-md-2 control-label">
-                                    Projection
-                                </label>
-
-                                <div class="col-md-10">
-                                    <input type="text" class="form-control form-control-sm object_coordinates" id="projection"
-                                           name="projection" placeholder="MongoDB syntax, see help">
-                                </div>
-                            </div>
-
-                            <input class="btn btn-dark" id="submit_query" type="submit" value="Submit">
+                            <button type="button" class="btn btn-dark btn-sm" id="submit_query">Submit</button>
 
                         </form>
                     </div>
@@ -533,7 +534,32 @@ Examples:
                 window.URL.revokeObjectURL(url);
             }, 100);
         }
+
         {% endif %}
+
+        // submit query
+        $(document).ready(function() {
+            $('#submit_query').click(function () {
+                bootbox.confirm({
+                    message: "Do you want to submit the query?",
+                    buttons: {
+                        cancel: {
+                            label: '<i class="fas fa-times"></i> Cancel'
+                        },
+                        confirm: {
+                            label: '<i class="fas fa-check"></i> Confirm'
+                        }
+                    },
+                    callback: function (result) {
+                        // console.log('This was logged in the callback: ' + result);
+                        // confirmed? emit request to server:
+                        if (result) {
+                            $('#objects_form').submit();
+                        }
+                    }
+                });
+            });
+        });
 
         {# show flashing messages #}
         function showFlashingMessage(title, message, type) {
@@ -557,9 +583,26 @@ Examples:
                     '</div>'
             });
         }
+        {% if messages | length > 0 %}
+            $(document).ready(function() {
+                {% for message in messages %}
+                    showFlashingMessage('Info:', '{{ message[0] }}', '{{ message[1] }}');
+                {% endfor %}
+            });
+        {% endif %}
     </script>
 
-    {# propagate form data #}
-    {# TODO #}
+    {# populate form from previous request #}
+    <script>
+        $(document).ready(function() {
+            {%-for key in form-%}
+                {%-if form[key] == 'on'-%}
+                    $('#{{ key }}').prop('checked', true);
+                {%-else-%}
+                    $('#{{ key }}').val('{{ form[key] }}');
+                {%-endif-%}
+            {%-endfor-%}
+        })
+    </script>
 
 {% endblock %}
