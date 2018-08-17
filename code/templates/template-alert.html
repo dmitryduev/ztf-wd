@@ -24,7 +24,7 @@
         <div class="row">
             {# cutouts: #}
             {% for cutout in ["science", "template", "difference"] %}
-            <div class="col">
+            <div class="col-md-auto">
                 <figure class='figure m-1 align-top'>
                     <img class='figure-img img-fluid mb-1' src='/data/{{ alert['_id'] }}/{{ cutout }}.jpg'>
                     <figcaption class='figure-caption text-center'>{{ cutout }}</figcaption>
@@ -33,7 +33,7 @@
             {% endfor %}
 
             {# lightcurve #}
-            <div class="col-4">
+            <div class="col-md-4">
                 <figure class='figure ml-3 mt-1 mb-1 align-top'>
                     <img class='figure-img img-fluid mb-1 mr-1' style='width: 295px'
                          src='/data/{{ alert['_id'] }}/lightcurve.jpg'>
@@ -52,7 +52,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row mt-1">
             <div class="col-12">
 {#                <pre><code class="json">{{alert|tojson_pretty|safe}}</code></pre>#}
                 <pre id="json-renderer" class="pl-4 pr-4"></pre>
@@ -78,8 +78,9 @@
     <script>
         var data = JSONbig.parse('{{-alert|tojson_pretty|safe|replace('\n', '')-}}');
         {#var data = JSONbig.parse('{{ alert }}');#}
-        console.log(data);
+        {#console.log(data);#}
         $('#json-renderer').jsonViewer(data, {collapsed: true, withQuotes: true});
+        // open
         $('#json-renderer').find(">:first-child").trigger("click");
     </script>
 

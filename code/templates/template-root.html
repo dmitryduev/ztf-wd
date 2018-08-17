@@ -13,9 +13,31 @@
 {#{% block date_range_picker %}#}
 {#{% endblock %}#}
 
+{% block body_top %}
+    <div class="container-fluid m-0 p-0">
+        <div class="jumbotron m-0 p-3 p-md-5 text-dark bg-light">
+            <div class="col-md-auto px-0">
+                <div class="media">
+                    <img class="align-self-start mr-3" style="width: 120px;"
+                         src="{{-script_root-}}/static/img/ZTF_CompactGrayLB.png"
+                         alt="Zwicky Transient Facility">
+                    <div class="media-body">
+                        <h5 class="mt-0">Top-aligned media</h5>
+                        <p>Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin.
+                            Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc
+                            ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.</p>
+                        <p>Donec sed odio dui. Nullam quis risus eget urna mollis ornare vel eu leo. Cum sociis natoque
+                            penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
 {% block body %}
 
-    <div class="container">
+    <div class="container-fluid">
 {#        <div class="row mb-2">#}
 {#            <div class="col-md-8 mb-2">#}
 {#                <h3>White dwarfs detected with ZTF</h3>#}
@@ -160,11 +182,11 @@
             {#console.log(document.getElementById('table').getBoundingClientRect().top);#}
             if (window_height > 1200) {
                 var top = document.getElementById('table').getBoundingClientRect().top;
-                return Math.max(450, window_height - top - 20);
+                return Math.max(560, window_height - top - 20);
             }
             else {
                 var top = document.getElementById('table').getBoundingClientRect().top;
-                return Math.max(450, window_height - top - 20);
+                return Math.max(560, window_height - top - 20);
             }
         }
 
