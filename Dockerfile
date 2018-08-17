@@ -36,5 +36,5 @@ WORKDIR /app
 #CMD /usr/local/bin/supervisord -n -c supervisord.conf
 #CMD crontab -l && gunicorn -w 4 -b 0.0.0.0:4000 server:app
 #CMD crontab -l && python fetch.py config.json && gunicorn -w 4 -b 0.0.0.0:4000 server:app
-CMD crontab -l && /bin/bash
+CMD cron && /bin/bash
 #CMD cron && python server.py
