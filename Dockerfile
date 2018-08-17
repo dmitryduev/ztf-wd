@@ -15,6 +15,8 @@ ADD code/crontab /etc/cron.d/fetch-cron
 RUN chmod 0644 /etc/cron.d/fetch-cron
 # Apply cron job
 RUN crontab /etc/cron.d/fetch-cron
+# Create the log file to be able to run tail
+RUN touch /var/log/cron.log
 
 # install python libs
 COPY code/requirements.txt /app/
@@ -32,7 +34,7 @@ WORKDIR /app
 
 # fetch last night's data, init DB, and run flask server with gunicorn
 #CMD /usr/local/bin/supervisord -n -c supervisord.conf
-#CMD cron && gunicorn -w 4 -b 0.0.0.0:4000 server:app
-#CMD cron && python fetch.py config.json && gunicorn -w 4 -b 0.0.0.0:4000 server:app
-CMD cron && /bin/bash
+#CMD crontab -l && gunicorn -w 4 -b 0.0.0.0:4000 server:app
+#CMD crontab -l && python fetch.py config.json && gunicorn -w 4 -b 0.0.0.0:4000 server:app
+CMD /bin/bash
 #CMD cron && python server.py
