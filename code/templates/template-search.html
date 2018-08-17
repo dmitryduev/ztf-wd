@@ -475,6 +475,14 @@ Examples:
             }
         });
 
+        // on accordion collapse/show
+        $('#coordinatesTab').on('hidden.bs.collapse', function () {
+          resetTableHeight();
+        });
+        $('#coordinatesTab').on('shown.bs.collapse', function () {
+          resetTableHeight();
+        });
+
         {# table sorting #}
         function getOrder() {
             var $table = $('#table');
@@ -597,9 +605,9 @@ Examples:
         $(document).ready(function() {
             {%-for key in form-%}
                 {%-if form[key] == 'on'-%}
-                    $('#{{ key }}').prop('checked', true);
+                    $('#{{-key-}}').prop('checked', true);
                 {%-else-%}
-                    $('#{{ key }}').val('{{ form[key] }}');
+                    $('#{{-key-}}').val("{{-form[key]|safe|replace('\"', '\'')-}}");
                 {%-endif-%}
             {%-endfor-%}
         })

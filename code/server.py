@@ -490,7 +490,7 @@ def search():
     if flask.request.method == 'POST':
         try:
             form = flask.request.form
-            print(form)
+            # print(form)
 
             # convert to filter and projection to run a find() query with the API:
             query = {'filter': {},
