@@ -31,7 +31,7 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 
 Set the TRAEFIK_FRONTEND_RULE env variable to "Host:<your domain>":
 ```bash
-export TRAEFIK_FRONTEND_RULE=Host:wd.rico.caltech.edu
+export TRAEFIK_FRONTEND_RULE=Host:rico.caltech.edu
 ```
 
 Set the TRAEFIK_DOMAIN env variable to "<your domain>":
