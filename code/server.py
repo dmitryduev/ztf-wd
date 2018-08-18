@@ -34,12 +34,15 @@ def add_admin():
     :return:
     """
     ex_admin = mongo.db.users.find_one({'_id': secrets['database']['admin_username']})
-    if ex_admin is None:
-        mongo.db.users.insert_one({'_id': secrets['database']['admin_username'],
-                                   'password': generate_password_hash(secrets['database']['admin_password']),
-                                   'permissions': {},
-                                   'last_modified': utc_now()
-                                   })
+    if ex_admin is None or len(ex_admin) == 0:
+        try:
+            mongo.db.users.insert_one({'_id': secrets['database']['admin_username'],
+                                       'password': generate_password_hash(secrets['database']['admin_password']),
+                                       'permissions': {},
+                                       'last_modified': utc_now()
+                                       })
+        except Exception as e:
+            print(e)
 
 
 ''' load config '''

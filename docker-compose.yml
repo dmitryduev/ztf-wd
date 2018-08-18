@@ -1,0 +1,40 @@
+version: '3.1'
+
+volumes:
+  mongodb:
+  alerts:
+
+services:
+  reverse-proxy:
+    image: traefik # The official Traefik docker image
+    command: --api --docker # Enables the web UI and tells Træfik to listen to docker
+    ports:
+    - "80:80"     # The HTTP port
+    - "8080:8080" # The Web UI (enabled by --api)
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+
+  flask:
+    build: .
+#    container_name: 'ztf-wd-flask'
+    volumes:
+      - alerts:/alerts
+    ports:
+      - 8000:4000
+    links:
+      - mongo:ztf-wd-mongo
+#      - mongo:mongo
+    restart: on-failure
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo
+    ports:
+      - 27018:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+      - MONGO_INITDB_ROOT_PASSWORD=mongoadminsecret
+    volumes:
+    - mongodb:/data/db
+    restart: on-failure
