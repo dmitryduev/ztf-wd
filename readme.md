@@ -29,23 +29,17 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 
 ##### Using `docker-compose` (for production)
 
-Create a `Docker` network called `web`:
+Set the TRAEFIK_FRONTEND_RULE env variable to "Host:<your domain>":
 ```bash
-docker network create web
+export TRAEFIK_FRONTEND_RULE=Host:wd.rico.caltech.edu
 ```
 
-Set the TRAEFIK_FRONTEND_RULE variable to "Host:<your domain>":
+Set the TRAEFIK_DOMAIN env variable to "<your domain>":
 ```bash
-$ export TRAEFIK_FRONTEND_RULE=Host:myhost.example.com
+export TRAEFIK_DOMAIN=rico.caltech.edu
 ```
 
-cd to `traefik` directory and run `docker-compose` to have `traefik` up and running:
-```bash
-cd traefik/
-docker-compose up -d
-```
-
-cd back to root directory and run `docker-compose` for start the service:
+Run `docker-compose` for start the service:
 ```bash
 docker-compose up --build -d
 ```

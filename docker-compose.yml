@@ -5,14 +5,18 @@ volumes:
   alerts:
 
 services:
-  reverse-proxy:
-    image: traefik # The official Traefik docker image
-    command: --api --docker # Enables the web UI and tells Træfik to listen to docker
-    ports:
-    - "80:80"     # The HTTP port
-    - "8080:8080" # The Web UI (enabled by --api)
+  traefik:
+    image: traefik
+    container_name: traefik
     volumes:
-    - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.toml:/etc/traefik/traefik.toml:ro
+      - ./traefik/acme:/etc/traefik/acme
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    restart: always
 
   flask:
     build: .
@@ -20,7 +24,8 @@ services:
     volumes:
       - alerts:/alerts
     ports:
-      - 8000:4000
+#      - 8000:4000
+      - 4000
     links:
       - mongo:ztf-wd-mongo
 #      - mongo:mongo
@@ -28,11 +33,20 @@ services:
     restart: always
     depends_on:
       - mongo
+    labels:
+      - "traefik.enable=true"
+#      - "traefik.backend=flask"
+      - "traefik.domain=${TRAEFIK_DOMAIN}"
+      - "traefik.basic.frontend.rule=${TRAEFIK_FRONTEND_RULE}"
+      - "traefik.basic.port=4000"
+      - "traefik.basic.protocol=http"
+
 
   mongo:
     image: mongo
     ports:
-      - 27018:27017
+#      - 27018:27017
+      - 27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongoadmin
       - MONGO_INITDB_ROOT_PASSWORD=mongoadminsecret
