@@ -29,15 +29,7 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 
 #### Using `docker-compose` (for production)
 
-Set the TRAEFIK_FRONTEND_RULE env variable to "Host:<your domain>":
-```bash
-export TRAEFIK_FRONTEND_RULE=Host:rico.caltech.edu
-```
-
-Set the TRAEFIK_DOMAIN env variable to "<your domain>":
-```bash
-export TRAEFIK_DOMAIN=rico.caltech.edu
-```
+Change rico.caltech.edu on line 40 in `docker-compose.yml` and line 76 in `traefik/traefik.toml` to your domain. 
 
 Run `docker-compose` for start the service:
 ```bash
