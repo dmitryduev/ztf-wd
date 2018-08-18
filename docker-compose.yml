@@ -37,8 +37,7 @@ services:
       - mongo
     labels:
       - "traefik.enable=true"
-      - "traefik.backend=flask"
-      - "traefik.port=4000"
+#      - "traefik.backend=flask"
       - "traefik.basic.frontend.rule=Host:rico.caltech.edu"
       - "traefik.basic.port=4000"
       - "traefik.basic.protocol=http"
