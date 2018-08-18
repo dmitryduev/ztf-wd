@@ -23,6 +23,8 @@ services:
 #    container_name: 'ztf-wd-flask'
     volumes:
       - alerts:/alerts
+    expose:
+      - "4000"
 #    ports:
 #      - 8000:4000
 #      - 4000
@@ -46,6 +48,8 @@ services:
 #    ports:
 #      - 27018:27017
 #      - 27017
+    expose:
+      - "27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongoadmin
       - MONGO_INITDB_ROOT_PASSWORD=mongoadminsecret
