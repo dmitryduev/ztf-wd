@@ -2,6 +2,11 @@
 
 _Loyally serving Shri and the community_
 
+
+#### Set-up instructions
+
+##### Pre-requisites
+
 Clone the repo and cd to the directory:
 ```bash
 git clone https://github.com/dmitryduev/ztf-wd.git
@@ -22,7 +27,25 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 }
 ```
 
-Run `docker-compose`:
+##### Using `docker-compose` (for production)
+
+Create a `Docker` network called `web`:
+```bash
+docker network create web
+```
+
+Set the TRAEFIK_FRONTEND_RULE variable to "Host:<your domain>":
+```bash
+$ export TRAEFIK_FRONTEND_RULE=Host:myhost.example.com
+```
+
+cd to `traefik` directory and run `docker-compose` to have `traefik` up and running:
+```bash
+cd traefik/
+docker-compose up -d
+```
+
+cd back to root directory and run `docker-compose` for start the service:
 ```bash
 docker-compose up --build -d
 ```
@@ -33,6 +56,8 @@ docker-compose down
 ```
 
 ---
+
+##### Using plain `Docker` (for dev/testing)
 
 If you want to use `docker run` instead:
 
@@ -56,3 +81,5 @@ docker run --name ztf-wd -d --restart always -p 8000:4000 -v ztf-wd-volume:/aler
 # test mode:
 docker run -it --rm --name ztf-wd -p 8000:4000 -v ztf-wd-volume:/alerts --link ztf-wd-mongo:mongo ztf-wd:latest
 ```
+
+The service will be available on port 8000 of the `Docker` host machine

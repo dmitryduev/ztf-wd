@@ -24,7 +24,8 @@ services:
     links:
       - mongo:ztf-wd-mongo
 #      - mongo:mongo
-    restart: on-failure
+#    restart: on-failure
+    restart: always
     depends_on:
       - mongo
 
@@ -37,4 +38,5 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=mongoadminsecret
     volumes:
     - mongodb:/data/db
-    restart: on-failure
+#    restart: on-failure
+    restart: always
