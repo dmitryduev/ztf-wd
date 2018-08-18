@@ -5,6 +5,7 @@
     "host": "0.0.0.0",
     "port": "4000",
     "SECRET_KEY": "very_secret_key",
+    "JWT_SECRET_KEY": "even_more_secret_key",
     "help": {
       "self": "global server settings",
       "host": "host ip for test env deployment",

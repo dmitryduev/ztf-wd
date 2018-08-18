@@ -3,6 +3,8 @@ from astropy.time import Time
 import flask
 import flask_login
 import flask_pymongo
+from flask_jwt_extended import JWTManager, jwt_required, jwt_optional, create_access_token, get_jwt_identity
+# from flask_misaka import Misaka
 import os
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -55,14 +57,18 @@ app.jinja_env.add_extension('jinja2.ext.do')
 # add json prettyfier
 app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
-# set up secret key:
+# set up secret keys:
 app.secret_key = config['server']['SECRET_KEY']
+app.config['JWT_SECRET_KEY'] = config['server']['SECRET_KEY']
 
 # config db
 app.config["MONGO_URI"] = f"mongodb://{config['database']['user']}:{config['database']['pwd']}@" + \
                           f"{config['database']['host']}:{config['database']['port']}/{config['database']['db']}"
 mongo = flask_pymongo.PyMongo(app)
 
+# Setup the Flask-JWT-Extended extension
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=30)
+jwt = JWTManager(app)
 
 # add admin if run first time:
 add_admin()
@@ -101,6 +107,7 @@ def request_loader(request):
 
     try:
         user.is_authenticated = check_password_hash(select['password'], flask.request.form['password'])
+
     except Exception as _e:
         print(_e)
         # return None
@@ -128,13 +135,29 @@ def login():
     # print(flask.request)
 
     username = flask.request.form['username']
+    password = flask.request.form['password']
     # check if username exists and passwords match
     # look up in the database first:
     select = mongo.db.users.find_one({'_id': username})
-    if select is not None and \
-            check_password_hash(select['password'], flask.request.form['password']):
+    if select is not None and check_password_hash(select['password'], password):
         user = User()
         user.id = username
+
+        # get a JWT token to use API:
+        try:
+            # post username and password, get access token
+            auth = requests.post('http://localhost:{}/auth'.format(config['server']['port']),
+                                 json={"username": username, "password": password})
+            access_token = auth.json()['access_token'] if 'access_token' in auth.json() else 'FAIL'
+        except Exception as e:
+            print(e)
+            access_token = 'FAIL'
+
+        user.access_token = access_token
+        # print(user, user.id, user.access_token)
+        # save to session:
+        flask.session['access_token'] = access_token
+
         flask_login.login_user(user, remember=True)
         return flask.redirect(flask.url_for('root'))
     else:
@@ -149,6 +172,9 @@ def logout():
         Log user out
     :return:
     """
+    if 'access_token' in flask.session:
+        flask.session.pop('access_token')
+
     flask_login.logout_user()
     return flask.redirect(flask.url_for('root'))
 
@@ -325,6 +351,39 @@ def remove_user():
         flask.abort(403)
 
 
+@app.route('/auth', methods=['POST'])
+def auth():
+    """
+        Issue a JSON web token (JWT) for a registered user.
+        To be used with API
+    :return:
+    """
+    try:
+        if not flask.request.is_json:
+            return flask.jsonify({"msg": "Missing JSON in request"}), 400
+
+        username = flask.request.json.get('username', None)
+        password = flask.request.json.get('password', None)
+        if not username:
+            return flask.jsonify({"msg": "Missing username parameter"}), 400
+        if not password:
+            return flask.jsonify({"msg": "Missing password parameter"}), 400
+
+        # check if username exists and passwords match
+        # look up in the database first:
+        select = mongo.db.users.find_one({'_id': username})
+        if select is not None and check_password_hash(select['password'], password):
+            # Identity can be any data that is json serializable
+            access_token = create_access_token(identity=username)
+            return flask.jsonify(access_token=access_token), 200
+        else:
+            return flask.jsonify({"msg": "Bad username or password"}), 401
+
+    except Exception as _e:
+        print(_e)
+        return flask.jsonify({"msg": "Something unknown went wrong"}), 400
+
+
 @app.route('/', methods=['GET'])
 # @flask_login.login_required
 def root():
@@ -407,6 +466,7 @@ def data_static(filename):
 
 # alerts REST
 @app.route('/alerts/<candid>', methods=['GET'])
+# @jwt_optional
 def alerts(candid):
     try:
         user_id = str(flask_login.current_user.id)
@@ -454,16 +514,29 @@ def alerts(candid):
 
 
 @app.route('/alerts', methods=['POST'])
+@jwt_optional
 def get_alerts():
-    if flask_login.current_user.is_anonymous:
+    try:
+        current_user = get_jwt_identity()
+
+        # print(current_user)
+
+        if current_user is not None:
+            user_id = str(current_user)
+
+        else:
+            # unauthorized
+            # return flask.jsonify({"msg": "Unauthorized access attempt"}), 401
+            user_id = None
+
+    except Exception as e:
+        print(e)
         user_id = None
-    else:
-        user_id = str(flask_login.current_user.id)
 
     query = flask.request.json
     # print(query)
 
-    # prevent fraud:
+    # prevent fraud: TODO: can add custom user permissions in the future
     if user_id is None:
         query['filter'] = {'$and': [{'candidate.programid': 1}, query['filter']]}
 
@@ -485,8 +558,17 @@ def search():
     """
     if flask_login.current_user.is_anonymous:
         user_id = None
+        access_token = None
     else:
         user_id = str(flask_login.current_user.id)
+        access_token = flask.session['access_token']
+
+    # try:
+    #     print(flask.session)
+    #     print(flask.session['access_token'])
+    #     print(flask_login.current_user.id, flask_login.current_user.access_token)
+    # except Exception as e:
+    #     print(e)
 
     # print(user_id)
 
@@ -547,9 +629,16 @@ def search():
                                                                                              cone_search_radius]}}})
 
             # query own API:
-            r = requests.post(os.path.join('http://', f"localhost:{config['server']['port']}", 'alerts'),
-                              json=query)
+            if access_token is not None:
+                r = requests.post(os.path.join('http://', f"localhost:{config['server']['port']}", 'alerts'),
+                                  json=query,
+                                  headers={'Authorization': 'Bearer {:s}'.format(access_token)})
+            else:
+                r = requests.post(os.path.join('http://', f"localhost:{config['server']['port']}", 'alerts'),
+                                  json=query)
+
             _alerts = r.json()
+            # print(_alerts)
 
             if len(_alerts) == 0:
                 messages = [(u'Did not find anything.', u'info')]
