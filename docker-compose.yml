@@ -36,8 +36,7 @@ services:
     labels:
       - "traefik.enable=true"
 #      - "traefik.backend=flask"
-      - "traefik.domain=${TRAEFIK_DOMAIN}"
-      - "traefik.basic.frontend.rule=${TRAEFIK_FRONTEND_RULE}"
+      - "traefik.basic.frontend.rule=Host:rico.caltech.edu"
       - "traefik.basic.port=4000"
       - "traefik.basic.protocol=http"
 
