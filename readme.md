@@ -1,11 +1,11 @@
-### ZTF finds White Dwarfs
+## ZTF finds White Dwarfs
 
 _Loyally serving Shri and the community_
 
 
-#### Set-up instructions
+### Set-up instructions
 
-##### Pre-requisites
+#### Pre-requisites
 
 Clone the repo and cd to the directory:
 ```bash
@@ -27,7 +27,7 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 }
 ```
 
-##### Using `docker-compose` (for production)
+#### Using `docker-compose` (for production)
 
 Set the TRAEFIK_FRONTEND_RULE env variable to "Host:<your domain>":
 ```bash
@@ -51,7 +51,7 @@ docker-compose down
 
 ---
 
-##### Using plain `Docker` (for dev/testing)
+#### Using plain `Docker` (for dev/testing)
 
 If you want to use `docker run` instead:
 
