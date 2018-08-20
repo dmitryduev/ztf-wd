@@ -16,10 +16,11 @@ logLevel = "DEBUG"
 # Each frontend can specify its own entrypoints.
 defaultEntryPoints = ["http", "https"]
 
-# TODO: replace with metrics
-#[web]
-## Port for the status page
-#address = ":8080"
+# API definition
+[api]
+  entryPoint = "traefik"
+  dashboard = true
+  debug = false
 
 # Entrypoints, http and https
 [entryPoints]
@@ -28,10 +29,20 @@ defaultEntryPoints = ["http", "https"]
   address = ":80"
     [entryPoints.http.redirect]
     entryPoint = "https"
+
   # https is the default
   [entryPoints.https]
   address = ":443"
     [entryPoints.https.tls]
+
+  # api + monitoring
+  [entryPoints.traefik]
+    address = ":8080"
+    [entryPoints.traefik.auth]
+     [entryPoints.traefik.auth.basic]
+       users = [
+         "admin:$2y$05$cEMJRZ4PbB7gP2r/OEAOVuygmo6XdYIu/UqFFLKu17FzXdX.JkiWG",
+       ]
 
 # Enable ACME (Let's Encrypt): automatic SSL
 [acme]

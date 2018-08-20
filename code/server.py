@@ -394,6 +394,8 @@ def root():
         Endpoint for the web GUI homepage
     :return:
     """
+    # TODO: replace GET with POST and get alerts through API
+
     if flask_login.current_user.is_anonymous:
         user_id = None
     else:
@@ -409,13 +411,16 @@ def root():
 
     # compute jd range:
     dt_start = datetime.datetime.strptime(date_start, '%Y%m%d')
-    jd_start = Time(dt_start).jd
+    # jd_start = Time(dt_start).jd
+    jd_start = jd(dt_start)
     if date_end == date_start:
         dt_end = dt_start + datetime.timedelta(days=1)
-        jd_end = Time(dt_end).jd
+        # jd_end = Time(dt_end).jd
+        jd_end = jd(dt_end)
     else:
         dt_end = datetime.datetime.strptime(date_end, '%Y%m%d') + datetime.timedelta(days=1)
-        jd_end = Time(dt_end).jd
+        # jd_end = Time(dt_end).jd
+        jd_end = jd(dt_end)
 
     # print(jd_start, jd_end)
 
@@ -424,11 +429,13 @@ def root():
         # Anonymous only gets MSIP data
         cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end},
                                            'candidate.programid': {'$eq': 1}},
-                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+                                          {'prv_candidates': 0, 'cutoutScience': 0,
+                                           'cutoutTemplate': 0, 'cutoutDifference': 0})
     else:
         # Shri gets it all
         cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end}},
-                                          {'cutoutScience': 0, 'cutoutTemplate': 0, 'cutoutDifference': 0})
+                                          {'prv_candidates': 0, 'cutoutScience': 0,
+                                           'cutoutTemplate': 0, 'cutoutDifference': 0})
 
     alerts = list(cursor) if cursor is not None else []
 
