@@ -424,28 +424,38 @@ def root():
 
     # print(jd_start, jd_end)
 
-    # get white dwarfs detected in jd time range
-    if user_id is None:
-        # Anonymous only gets MSIP data
-        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end},
-                                           'candidate.programid': {'$eq': 1}},
-                                          {'prv_candidates': 0, 'cutoutScience': 0,
-                                           'cutoutTemplate': 0, 'cutoutDifference': 0})
-    else:
-        # Shri gets it all
-        cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': jd_start, '$lt': jd_end}},
-                                          {'prv_candidates': 0, 'cutoutScience': 0,
-                                           'cutoutTemplate': 0, 'cutoutDifference': 0})
+    def iter_dates(_user_id, _jd_start, _jd_end):
+        """
+            instead of first loading and then sending everything to user all at once,
+             yield an alert at a time and stream to user
+        :param _user_id:
+        :param _jd_start:
+        :param _jd_end:
+        :return:
+        """
+        # get white dwarfs detected in jd time range
+        if _user_id is None:
+            # Anonymous only gets MSIP data
+            cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': _jd_start, '$lt': _jd_end},
+                                               'candidate.programid': {'$eq': 1}},
+                                              {'prv_candidates': 0, 'cutoutScience': 0,
+                                               'cutoutTemplate': 0, 'cutoutDifference': 0})
+        else:
+            # Shri gets it all
+            cursor = mongo.db.ZTF_alerts.find({'candidate.jd': {'$gt': _jd_start, '$lt': _jd_end}},
+                                              {'prv_candidates': 0, 'cutoutScience': 0,
+                                               'cutoutTemplate': 0, 'cutoutDifference': 0})
 
-    alerts = list(cursor) if cursor is not None else []
-
-    # TODO: yield from pymongo cursor instead of converting to list all at once
+        if cursor is not None:
+            if cursor.count() > 0:
+                for alert in cursor:
+                    yield alert
 
     return flask.Response(stream_template('template-root.html',
                                           user=user_id,
                                           logo=config['server']['logo'],
                                           start=date_start, end=date_end,
-                                          alerts=alerts))
+                                          alerts=iter_dates(user_id, jd_start, jd_end)))
 
 
 def stream_template(template_name, **context):
@@ -477,7 +487,7 @@ def data_static(filename):
 # alerts REST
 @app.route('/alerts/<candid>', methods=['GET'])
 # @jwt_optional
-def alerts(candid):
+def get_alert(candid):
     try:
         user_id = str(flask_login.current_user.id)
     except Exception as e:
@@ -637,6 +647,11 @@ def search():
                 query['filter']['$and'][-1]['$or'].append({'coordinates.radec_geojson':
                                                            {'$geoWithin': {'$centerSphere': [[_ra, _dec],
                                                                                              cone_search_radius]}}})
+
+            # FIXME: remove once 'projection' is exposed:
+            query['projection'] = {**query['projection'],
+                                   **{'prv_candidates': 0, 'cutoutScience': 0,
+                                      'cutoutTemplate': 0, 'cutoutDifference': 0}}
 
             # query own API:
             if access_token is not None:
