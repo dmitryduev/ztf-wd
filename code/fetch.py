@@ -623,6 +623,9 @@ class WhiteDwarf(object):
         self.db['db'][self.config['database']['collection_obs']].create_index([('candidate.programid',
                                                                                 pymongo.ASCENDING)],
                                                                               background=True)
+        self.db['db'][self.config['database']['collection_obs']].create_index([('candidate.jd',
+                                                                                pymongo.ASCENDING)],
+                                                                              background=True)
 
         self.logger.info('All done')
 
