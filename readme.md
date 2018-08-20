@@ -13,7 +13,7 @@ git clone https://github.com/dmitryduev/ztf-wd.git
 cd ztf-wd
 ```
 
-Create file secrets.json with the Kowalski login credentials and admin user/password for the website:
+Create `secrets.json` with the `Kowalski` login credentials and admin user/password for the website:
 ```json
 {
   "kowalski": {
@@ -29,9 +29,9 @@ Create file secrets.json with the Kowalski login credentials and admin user/pass
 
 #### Using `docker-compose` (for production)
 
-Change rico.caltech.edu on line 40 in `docker-compose.yml` and line 76 in `traefik/traefik.toml` to your domain. 
+Change `rico.caltech.edu` on line 40 in `docker-compose.yml` and line 88 in `traefik/traefik.toml` to your domain. 
 
-Run `docker-compose` for start the service:
+Run `docker-compose` to start the service:
 ```bash
 docker-compose up --build -d
 ```
