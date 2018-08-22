@@ -435,7 +435,7 @@ class WhiteDwarf(object):
 
         return {}
 
-    def dump_lightcurve(self, alert, days_ago=True):
+    def dump_lightcurve(self, alert, days_ago=False):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
 
         if not os.path.exists(path_out):
