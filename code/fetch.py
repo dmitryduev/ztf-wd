@@ -435,7 +435,7 @@ class WhiteDwarf(object):
 
         return {}
 
-    def dump_lightcurve(self, alert, days_ago=False):
+    def dump_lightcurve(self, alert, time_label='datetime'):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
 
         if not os.path.exists(path_out):
@@ -444,13 +444,16 @@ class WhiteDwarf(object):
         dflc = make_dataframe(alert)
 
         filter_color = {1: 'green', 2: 'red', 3: 'pink'}
-        if days_ago:
+        if time_label == 'days_ago':
             now = Time.now().jd
             t = dflc.jd - now
-            xlabel = 'Days Ago'
-        else:
+            xlabel = f'Days Before {str(datetime.datetime.utcnow())} UTC'
+        elif time_label == 'jd':
             t = dflc.jd
-            xlabel = 'Time (JD)'
+            xlabel = 'Date (JD)'
+        elif time_label == 'datetime':
+            t = Time(dflc.jd, format='jd').datetime
+            xlabel = 'Date (UTC)'
 
         plt.close('all')
         fig = plt.figure()
