@@ -104,8 +104,15 @@ Examples:
     {% if alerts | length > 0 %}
         <div id="toolbar" class="btn-group">
             <button type="button" class="btn btn-outline-dark"
-                    style="cursor: pointer;" onclick="toggle_expansion()">
+                    style="cursor: pointer;" onclick="toggle_expansion()"
+                    data-toggle="tooltip" data-placement="top" title="Show/hide more">
                 <i id="expansion_toggle" class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+
+            <button type="button" class="btn btn-outline-dark"
+                    style="cursor: pointer;" onclick="toggle_invert_cutouts()"
+                    data-toggle="tooltip" data-placement="top" title="Invert cutout colors">
+                <i id="expansion_toggle" class="fas fa-adjust" aria-hidden="true"></i>
             </button>
 
         </div>
@@ -423,7 +430,7 @@ Examples:
             cutouts.forEach(function (cutout) {
                 html.push("<div class=\"col p-0 m-0\">");
                 html.push("<figure class='figure m-1 align-top'>");
-                html.push("<img class='figure-img img-fluid mb-1' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg'>");
+                html.push("<img class='figure-img img-fluid mb-1 cutout' src='/data/"+ row['candid']+ "_" + row['objectId'] + "/"+ cutout +".jpg'>");
                 html.push("<figcaption class='figure-caption text-center'>" + cutout + "</figcaption>");
                 html.push("</figure>");
                 html.push("</div>");
@@ -518,6 +525,11 @@ Examples:
                 $('#table').bootstrapTable('collapseAllRows', false);
             }
             $("#expansion_toggle").toggleClass('fa-plus fa-minus');
+        }
+
+        {# toggle cutout color invert #}
+        function toggle_invert_cutouts(){
+            $('.cutout').toggleClass('invert');
         }
 
 
