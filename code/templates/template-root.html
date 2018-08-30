@@ -224,6 +224,14 @@
                         sortable: true
                     },
                     {
+                        field: 'wd_pwd',
+                        title: 'pwd',
+                        rowspan: 2,
+                        align: 'center',
+                        valign: 'middle',
+                        sortable: true
+                    },
+                    {
                         field: 'wd_gaia_dr2_id',
                         title: 'Gaia DR2 ID',
                         rowspan: 2,
@@ -382,6 +390,7 @@
                         dec: "{{ alert['coordinates']['radec_str'][1] }}",
 
                         wd_name: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['White_dwarf_name']}}",
+                        wd_pwd: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['Pwd']}}".slice(0, 4),
                         wd_gaia_dr2_id: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['source_id']}}",
                         wd_ra: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['coordinates']['radec_str'][0]}}",
                         wd_dec: "{{alert['xmatch']['nearest_within_5_arcsec']['Gaia_DR2_WD']['coordinates']['radec_str'][1]}}",
