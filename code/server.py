@@ -73,6 +73,9 @@ mongo = flask_pymongo.PyMongo(app)
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(days=30)
 jwt = JWTManager(app)
 
+# session lifetime for registered users
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=365)
+
 # add admin if run first time:
 add_admin()
 
@@ -159,6 +162,7 @@ def login():
         user.access_token = access_token
         # print(user, user.id, user.access_token)
         # save to session:
+        flask.session.permanent = True
         flask.session['access_token'] = access_token
 
         flask_login.login_user(user, remember=True)
@@ -177,6 +181,7 @@ def logout():
     """
     if 'access_token' in flask.session:
         flask.session.pop('access_token')
+        flask.session.modified = True
 
     flask_login.logout_user()
     return flask.redirect(flask.url_for('root'))
@@ -581,9 +586,12 @@ def search():
         access_token = None
     else:
         user_id = str(flask_login.current_user.id)
-        access_token = flask.session['access_token']
+        if 'access_token' in flask.session:
+            access_token = flask.session['access_token']
+        else:
+            access_token = None
 
-    # try:
+            # try:
     #     print(flask.session)
     #     print(flask.session['access_token'])
     #     print(flask_login.current_user.id, flask_login.current_user.access_token)
