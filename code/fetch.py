@@ -435,7 +435,7 @@ class WhiteDwarf(object):
 
         return {}
 
-    def dump_lightcurve(self, alert, time_label='datetime'):
+    def dump_lightcurve(self, alert, time_label='days_ago'):
         path_out = os.path.join(self.config['path']['path_alerts'], alert['_id'])
 
         if not os.path.exists(path_out):
@@ -460,14 +460,35 @@ class WhiteDwarf(object):
         ax = fig.add_subplot(111)
         for fid, color in filter_color.items():
             # plot detections in this filter:
-            w = (dflc.fid == fid) & ~dflc.magpsf.isnull()
+            w = (dflc.fid == fid) & ~dflc.magpsf.isnull() & (dflc.distnr <= 5)
             if np.sum(w):
-                ax.errorbar(t[w], dflc.loc[w, 'magpsf'], dflc.loc[w, 'sigmapsf'],
+                # we want to plot (reference_flux + sign*difference_flux) -> mag
+                sign = -1 + 2 * (dflc.loc[w, 'isdiffpos'].values == 't')
+                magref = dflc.loc[w, 'magnr'].values
+                magpsf = dflc.loc[w, 'magpsf'].values
+                sigmaref = dflc.loc[w, 'sigmagnr'].values
+                sigmapsf = dflc.loc[w, 'sigmapsf'].values
+                print('\n')
+                print(alert['candid'])
+                print(sign)
+                print(magref)
+                print(magpsf)
+                # mag = - 2.5 * np.log10(10 ** (-magref / 2.5) + sign * 10 ** (-magpsf / 2.5))
+                mag = - 2.5 * np.log10(np.abs(10 ** (-magref / 2.5) + sign * 10 ** (-magpsf / 2.5)))
+                # sigmamag = - 2.5 * np.log10(10 ** (-sigmaref / 2.5) + 10 ** (-sigmapsf / 2.5))
+                sigmamag = - 2.5 * np.log10(np.abs(10 ** (-sigmaref / 2.5) + 10 ** (-sigmapsf / 2.5)))
+                ax.errorbar(t[w], mag, sigmamag,
                             fmt='.', color=color)
             wnodet = (dflc.fid == fid) & dflc.magpsf.isnull() & (dflc.diffmaglim > 0)
             if np.sum(wnodet):
-                ax.scatter(t[wnodet], dflc.loc[wnodet, 'diffmaglim'],
-                           marker='v', color=color, alpha=0.25)
+                # plot upper limit
+                magref_0 = magref[0] if np.sum(w) else 22
+                # add magref since in this case upper limits correspond to times when the white dwarf has
+                # the *same* brightness as in the reference (within 5 sigma)
+                # ax.scatter(t[wnodet], dflc.loc[wnodet, 'diffmaglim'],
+                #            marker='v', color=color, alpha=0.25)
+                ax.scatter(t[wnodet], magref_0,
+                           marker='o', color=color, alpha=0.5)
 
         plt.gca().invert_yaxis()
         ax.set_xlabel(xlabel)
