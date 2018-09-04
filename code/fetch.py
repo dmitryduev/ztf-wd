@@ -372,7 +372,7 @@ class WhiteDwarf(object):
         for ir in range(retries):
             try:
                 self.logger.debug(f'Querying Kowalski, attempt {ir+1}')
-                # query Kowalski for Gaia stars:
+                # query Kowalski:
                 # if False:
                 q = {"query_type": "cone_search",
                      "object_coordinates": {"radec": str(_stars),
@@ -381,7 +381,10 @@ class WhiteDwarf(object):
                      "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd_start,
                                                                              "$lt": _jd_end}},
                                                  "projection": {}}
-                                  }
+                                  },
+                     "kwargs": {
+                         "query_expiration_interval": 1
+                     }
                      }
                 # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
                 # {"_id": 1, "objectId": 1,
@@ -417,7 +420,10 @@ class WhiteDwarf(object):
             try:
                 self.logger.debug(f'Querying Kowalski, attempt {ir+1}')
                 q = {"query_type": "general_search",
-                     "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})"
+                     "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})",
+                     "kwargs": {
+                         "query_expiration_interval": 1
+                     }
                      }
                 # print(q)
                 r = self.kowalski.query(query=q, timeout=300)
@@ -459,36 +465,67 @@ class WhiteDwarf(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         for fid, color in filter_color.items():
+            ref_flux = None
             # plot detections in this filter:
             w = (dflc.fid == fid) & ~dflc.magpsf.isnull() & (dflc.distnr <= 5)
             if np.sum(w):
                 # we want to plot (reference_flux + sign*difference_flux) -> mag
-                sign = -1 + 2 * (dflc.loc[w, 'isdiffpos'].values == 't')
-                magref = dflc.loc[w, 'magnr'].values
-                magpsf = dflc.loc[w, 'magpsf'].values
-                sigmaref = dflc.loc[w, 'sigmagnr'].values
-                sigmapsf = dflc.loc[w, 'sigmapsf'].values
-                print('\n')
-                print(alert['candid'])
-                print(sign)
-                print(magref)
-                print(magpsf)
-                # mag = - 2.5 * np.log10(10 ** (-magref / 2.5) + sign * 10 ** (-magpsf / 2.5))
-                mag = - 2.5 * np.log10(np.abs(10 ** (-magref / 2.5) + sign * 10 ** (-magpsf / 2.5)))
-                # sigmamag = - 2.5 * np.log10(10 ** (-sigmaref / 2.5) + 10 ** (-sigmapsf / 2.5))
-                sigmamag = - 2.5 * np.log10(np.abs(10 ** (-sigmaref / 2.5) + 10 ** (-sigmapsf / 2.5)))
-                ax.errorbar(t[w], mag, sigmamag,
+                sign = 2 * (dflc.loc[w, 'isdiffpos'].values == 't') - 1
+                ref_mag = np.float64(dflc.iloc[0]['magnr'])
+                ref_flux = np.float64(10 ** (0.4 * (27 - ref_mag)))
+                ref_sigflux = np.float64(dflc.iloc[0]['sigmagnr'] / 1.0857 * ref_flux)
+
+                difference_flux = np.float64(10 ** (0.4 * (27 - dflc.loc[w, 'magpsf'].values)))
+                difference_sigflux = np.float64(dflc.loc[w, 'sigmapsf'].values / 1.0857 * difference_flux)
+
+                if not isinstance(difference_flux, np.ndarray):
+                    difference_flux = np.array([difference_flux])
+                if not isinstance(difference_sigflux, np.ndarray):
+                    difference_sigflux = np.array([difference_sigflux])
+
+                dc_flux = ref_flux + sign * difference_flux
+                dc_sigflux = np.sqrt(difference_sigflux ** 2 + ref_sigflux ** 2)
+
+                if not isinstance(dc_flux, np.ndarray):
+                    dc_flux = np.array([dc_flux])
+                if not isinstance(dc_sigflux, np.ndarray):
+                    dc_sigflux = np.array([dc_sigflux])
+
+                # mask bad values:
+                w_good = dc_flux > 0
+                # print(dc_flux)
+                # print(dc_sigflux)
+                # print(w_good)
+
+                dc_mag = 27 - 2.5 * np.log10(dc_flux[w_good])
+                dc_sigmag = dc_sigflux[w_good] / dc_flux[w_good] * 1.0857
+
+                ax.errorbar(t[w][w_good], dc_mag, dc_sigmag,
                             fmt='.', color=color)
+
             wnodet = (dflc.fid == fid) & dflc.magpsf.isnull() & (dflc.diffmaglim > 0)
-            if np.sum(wnodet):
-                # plot upper limit
-                magref_0 = magref[0] if np.sum(w) else 22
-                # add magref since in this case upper limits correspond to times when the white dwarf has
-                # the *same* brightness as in the reference (within 5 sigma)
-                # ax.scatter(t[wnodet], dflc.loc[wnodet, 'diffmaglim'],
-                #            marker='v', color=color, alpha=0.25)
-                ax.scatter(t[wnodet], magref_0,
-                           marker='o', color=color, alpha=0.5)
+            if np.sum(wnodet) and (ref_flux is not None):
+                # if we have a non-detection that means that there's no flux +/- 5 sigma from
+                # the ref flux (unless it's a bad subtraction)
+                difference_fluxlim = np.float64(10 ** (0.4 * (27 - dflc.loc[wnodet, 'diffmaglim'].values)))
+                dc_flux_ulim = ref_flux + difference_fluxlim
+                dc_flux_llim = ref_flux - difference_fluxlim
+
+                if not isinstance(dc_flux_ulim, np.ndarray):
+                    dc_flux_ulim = np.array([dc_flux_ulim])
+                if not isinstance(dc_flux_llim, np.ndarray):
+                    dc_flux_llim = np.array([dc_flux_llim])
+
+                # mask bad values:
+                w_u_good = dc_flux_ulim > 0
+                w_l_good = dc_flux_llim > 0
+
+                dc_mag_ulim = 27 - 2.5 * np.log10(dc_flux_ulim[w_u_good])
+                dc_mag_llim = 27 - 2.5 * np.log10(dc_flux_llim[w_l_good])
+                ax.scatter(t[wnodet][w_u_good], dc_mag_ulim,
+                           marker='v', color=color, alpha=0.25)
+                ax.scatter(t[wnodet][w_l_good], dc_mag_llim,
+                           marker='^', color=color, alpha=0.25)
 
         plt.gca().invert_yaxis()
         ax.set_xlabel(xlabel)
