@@ -211,14 +211,13 @@ def unauthorized_handler():
 @app.route('/users', methods=['GET'])
 @flask_login.login_required
 def manage_users():
-    if flask_login.current_user.id == 'admin':
+    if flask_login.current_user.id == secrets['database']['admin_username']:
         # fetch users from the database:
         _users = {}
 
         cursor = mongo.db.users.find()
         for usr in cursor:
             # print(usr)
-            # TODO: might want to fetch more data in the future
             _users[usr['_id']] = {'permissions': usr['permissions']}
         cursor.close()
 
@@ -240,17 +239,19 @@ def add_user():
     """
     if flask_login.current_user.id == secrets['database']['admin_username']:
         try:
-            print(flask.request.args)
-            user = flask.request.args['user']
-            password = flask.request.args['password']
-            permissions = flask.request.args['permissions']
+            username = flask.request.json.get('user', None)
+            password = flask.request.json.get('password', None)
+            permissions = flask.request.json.get('permissions', '{}')
 
-            if len(user) == 0 or len(password) == 0:
-                return 'everything must be set'
+            if len(username) == 0 or len(password) == 0:
+                return 'username and password must be set'
+
+            if len(permissions) == 0:
+                permissions = '{}'
 
             # add user to coll_usr collection:
             mongo.db.users.insert_one(
-                {'_id': user,
+                {'_id': username,
                  'password': generate_password_hash(password),
                  'permissions': literal_eval(str(permissions)),
                  'last_modified': datetime.datetime.now()}
@@ -275,29 +276,28 @@ def edit_user():
 
     if flask_login.current_user.id == secrets['database']['admin_username']:
         try:
-            # print(flask.request.args)
-            id = flask.request.args['_user']
-            user = flask.request.args['edit-user']
-            password = flask.request.args['edit-password']
-            permissions = flask.request.args['edit-permissions']
+            id = flask.request.json.get('_user', None)
+            username = flask.request.json.get('edit-user', '')
+            password = flask.request.json.get('edit-password', '')
+            permissions = flask.request.json.get('edit-permissions', '{}')
 
-            if id == secrets['database']['admin_username'] and user != secrets['database']['admin_username']:
+            if id == secrets['database']['admin_username'] and username != secrets['database']['admin_username']:
                 return 'Cannot change the admin username!'
 
-            if len(user) == 0:
+            if len(username) == 0:
                 return 'username must be set'
 
             # change username:
-            if id != user:
+            if id != username:
                 select = mongo.db.users.find_one({'_id': id})
-                select['_id'] = user
+                select['_id'] = username
                 mongo.db.users.insert_one(select)
                 mongo.db.users.delete_one({'_id': id})
 
             # change password:
             if len(password) != 0:
                 result = mongo.db.users.update(
-                    {'_id': id},
+                    {'_id': username},
                     {
                         '$set': {
                             'password': generate_password_hash(password)
@@ -308,8 +308,8 @@ def edit_user():
 
             # change permissions:
             if len(permissions) != 0:
-                select = mongo.db.users.find_one({'_id': id}, {'_id': 0, 'permissions': 1})
-                # print(select['permissions'])
+                select = mongo.db.users.find_one({'_id': username}, {'_id': 0, 'permissions': 1})
+                # print(select)
                 # print(permissions)
                 _p = literal_eval(str(permissions))
                 # print(_p)
@@ -341,15 +341,13 @@ def remove_user():
     """
     if flask_login.current_user.id == secrets['database']['admin_username']:
         try:
-            # print(flask.request.args)
             # get username from request
-            user = flask.request.args['user']
-            if user == 'admin':
-                return 'Cannot remove the admin!'
-            # print(user)
+            username = flask.request.json.get('user', None)
+            if username == secrets['database']['admin_username']:
+                return 'Cannot remove the superuser!'
 
             # try to remove the user:
-            mongo.db.users.delete_one({'_id': user})
+            mongo.db.users.delete_one({'_id': username})
 
             return 'success'
         except Exception as _e:
@@ -511,7 +509,7 @@ def get_alert(candid):
     if alert is not None and len(alert) != 0:
         if alert['candidate']['programid'] != 1:
             try:
-                if flask_login.current_user.id == 'admin':
+                if flask_login.current_user.id == secrets['database']['admin_username']:
                     if download is not None:
                         return flask.Response(dumps(alert), mimetype='application/json')
                     else:

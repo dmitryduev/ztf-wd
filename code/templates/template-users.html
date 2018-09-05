@@ -80,8 +80,10 @@
                                 <input type="password" class="form-control" name="password" id="form-pwd"
                                        placeholder=""
                                        autocomplete="off">
-                                <div class="input-group-addon">
-                                    <a href=""><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                <div class="input-group-append">
+                                    <span class="input-group-text">
+                                        <a href=""><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -124,8 +126,10 @@
                                 <input type="password" class="form-control" name="edit-password" id="form-edit-pwd"
                                        placeholder="leave empty to keep the current password"
                                        autocomplete="off">
-                                <div class="input-group-addon">
-                                    <a href=""><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                <div class="input-group-append">
+                                    <span class="input-group-text">
+                                        <a href=""><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -179,12 +183,15 @@
             });
         });
 
-        // send AJAX GET request to server
+        // send AJAX PUT request to server
         $('#addUserButton').click(function (e) {
-            $.ajax({url: '{{-script_root-}}/add_user?' + $('#tempAddUser').serialize(),
-                method: 'GET',
+            $.ajax({url: '{{-script_root-}}/users',
+                method: 'PUT',
+                data: JSON.stringify($('#tempAddUser').serializeJSON()),
+                processData: false,
+                contentType: 'application/json',
                 success: function(data) {
-                    if (data=='success') {
+                    if (data === 'success') {
                         location.reload(true);
                     }
                     else {
@@ -206,14 +213,18 @@
             var user = $(this).data('user');
             bootbox.confirm("Are you sure?", function(result) {
                 if (result) {
-                    $.ajax({url: '{{-script_root-}}/remove_user?user=' + user,
-                        method: 'GET',
+                    $.ajax({url: '{{-script_root-}}/users',
+                        data: JSON.stringify({'user': user}),
+                        method: 'DELETE',
+                        processData: false,
+                        contentType: 'application/json',
                         success: function(data) {
-                            if (data=='success') {
+                            if (data === 'success') {
                                 location.reload(true);
                             }
                             else {
-                                showFlashingMessage('Info:', 'Failed to remove user', 'danger');
+                                {#showFlashingMessage('Info:', 'Failed to remove user', 'danger');#}
+                                showFlashingMessage('Info:', data, 'danger');
                             }
                         },
                         error: function(data) {
@@ -229,18 +240,23 @@
         $('#editUserButton').click(function (e) {
             // Extract info from data-* attributes
             var _user = user_keep;
-            var user = $(this).data('user');
             bootbox.confirm("Save changes?", function(result) {
                 if (result) {
-                    $.ajax({url: '{{-script_root-}}/edit_user?' + $('#tempEditUser').serialize() +'&_user=' + _user,
-                        method: 'GET',
+                    let edit_form = $('#tempEditUser').serializeJSON();
+                    edit_form['_user'] = _user;
+                    console.log(edit_form);
+                    $.ajax({url: '{{-script_root-}}/users',
+                        data: JSON.stringify(edit_form),
+                        method: 'POST',
+                        processData: false,
+                        contentType: 'application/json',
                         success: function(data) {
-                            if (data=='success') {
+                            if (data === 'success') {
                                 location.reload(true);
                             }
                             else {
                                 $('#editUserModal').modal('hide');
-                                showFlashingMessage('Info:', 'Failed to edit user', 'danger');
+                                showFlashingMessage('Info:', data, 'danger');
                             }
                         },
                         error: function(data) {
