@@ -402,7 +402,7 @@ class WhiteDwarf(object):
                 r = self.kowalski.query(query=q, timeout=300)
                 # print(r)
 
-                matches = r['result']['ZTF_alerts']
+                matches = r['result_data']['ZTF_alerts']
 
                 # only return non-empty matches:
                 non_empty_matches = {m: v for m, v in matches.items() if v is not None}
@@ -429,7 +429,7 @@ class WhiteDwarf(object):
                 # print(q)
                 r = self.kowalski.query(query=q, timeout=300)
                 # print(r)
-                result = r['result']['query_result']
+                result = r['result_data']['query_result']
 
                 # convert to dict id -> result
                 matches = {obj['_id']: obj for obj in result}
