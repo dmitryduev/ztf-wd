@@ -378,9 +378,10 @@ class WhiteDwarf(object):
                      "object_coordinates": {"radec": str(_stars),
                                             "cone_search_radius": str(_fov_size_ref_arcsec),
                                             "cone_search_unit": "arcsec"},
-                     "catalogs": {"ZTF_alerts": {"filter": {"candidate.jd": {"$gt": _jd_start,
-                                                                             "$lt": _jd_end}},
-                                                 "projection": {}}
+                     "catalogs": {"ZTF_alerts": {"filter":
+                                                     f'{{"candidate.jd": {{"$gt": {_jd_start}, "$lt": {_jd_end}}}}}',
+                                                 "projection":
+                                                     "{}"}
                                   },
                      "kwargs": {
                          "query_expiration_interval": 1
@@ -395,8 +396,8 @@ class WhiteDwarf(object):
                 #                                                             "candidate.magpsf": 1,
                 #                                                             "candidate.sigmapsf": 1}
                 # ,
-                #                               "Gaia_DR2_WD": {"filter": {},
-                #                                               "projection": {"_id": 1, "coordinates": 0}}
+                #                               "Gaia_DR2_WD": {"filter": '{}',
+                #                                               "projection": '{"_id": 1, "coordinates": 0}'}
                 # print(q)
                 r = self.kowalski.query(query=q, timeout=300)
                 # print(r)
