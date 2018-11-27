@@ -384,7 +384,7 @@ class WhiteDwarf(object):
                                                      "{}"}
                                   },
                      "kwargs": {
-                         "query_expiration_interval": 1
+                         "save": False
                      }
                      }
                 # {"candidate.jd": {"$gt": _jd, "$lt": _jd + 1}}
@@ -405,7 +405,7 @@ class WhiteDwarf(object):
                 matches = r['result_data']['ZTF_alerts']
 
                 # only return non-empty matches:
-                non_empty_matches = {m: v for m, v in matches.items() if v is not None}
+                non_empty_matches = {m: v for m, v in matches.items() if ((v is not None) and (len(v) > 0))}
 
                 return non_empty_matches
 
@@ -423,7 +423,7 @@ class WhiteDwarf(object):
                 q = {"query_type": "general_search",
                      "query": f"db['{_coll}'].find({{'_id': {{'$in': {_ids}}}}})",
                      "kwargs": {
-                         "query_expiration_interval": 1
+                         "save": False
                      }
                      }
                 # print(q)
