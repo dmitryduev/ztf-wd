@@ -18,7 +18,6 @@ import numpy as np
 
 
 from utils import utc_now, jd, get_config, radec_str2geojson
-# from .utils import utc_now, jd, get_config
 
 
 def to_pretty_json(value):
