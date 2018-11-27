@@ -21,8 +21,7 @@ RUN touch /var/log/cron.log
 
 # install python libs
 COPY code/requirements.txt /app/
-RUN pip install Cython && pip install numpy
-RUN pip install -r /app/requirements.txt
+RUN pip install Cython && pip install numpy && pip install -r /app/requirements.txt
 
 # copy over the secrets:
 COPY secrets.json /app/
