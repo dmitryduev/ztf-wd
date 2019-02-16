@@ -472,7 +472,7 @@ class WhiteDwarf(object):
             if np.sum(w):
                 # we want to plot (reference_flux + sign*difference_flux) -> mag
                 sign = 2 * (dflc.loc[w, 'isdiffpos'].values == 't') - 1
-                ref_mag = np.float64(dflc.iloc[0]['magnr'])
+                ref_mag = np.float64(dflc.loc[w].iloc[0]['magnr'])
                 ref_flux = np.float64(10 ** (0.4 * (27 - ref_mag)))
                 ref_sigflux = np.float64(dflc.iloc[0]['sigmagnr'] / 1.0857 * ref_flux)
 
